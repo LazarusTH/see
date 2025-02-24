@@ -13,7 +13,8 @@ import {
 } from "recharts";
 
 const AdminDashboard = () => {
-  const { data: stats } = useQuery({
+  // Fetch admin stats
+  const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ["adminStats"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_admin_dashboard_stats");
@@ -22,7 +23,8 @@ const AdminDashboard = () => {
     },
   });
 
-  const { data: transactionHistory } = useQuery({
+  // Fetch transaction history
+  const { data: transactionHistory, isLoading: isHistoryLoading } = useQuery({
     queryKey: ["transactionHistory"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -36,23 +38,29 @@ const AdminDashboard = () => {
       // Process data for chart
       const chartData = data.reduce((acc, curr) => {
         const date = new Date(curr.created_at).toLocaleDateString();
-        const existing = acc.find(item => item.date === date);
+        const existing = acc.find((item) => item.date === date);
         if (existing) {
           existing[curr.type] = (existing[curr.type] || 0) + curr.amount;
         } else {
           acc.push({
             date,
-            deposit: curr.type === 'deposit' ? curr.amount : 0,
-            withdrawal: curr.type === 'withdrawal' ? curr.amount : 0,
-            send: curr.type === 'send' ? curr.amount : 0,
+            deposit: curr.type === "deposit" ? curr.amount : 0,
+            withdrawal: curr.type === "withdrawal" ? curr.amount : 0,
+            send: curr.type === "send" ? curr.amount : 0,
           });
         }
         return acc;
-      }, []).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      }, []);
 
+      // Sort by date
+      chartData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       return chartData;
     },
   });
+
+  if (isStatsLoading || isHistoryLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -100,18 +108,18 @@ const AdminDashboard = () => {
               <XAxis
                 dataKey="date"
                 stroke="#64748B"
-                tick={{ fill: '#64748B' }}
+                tick={{ fill: "#64748B" }}
               />
               <YAxis
                 stroke="#64748B"
-                tick={{ fill: '#64748B' }}
+                tick={{ fill: "#64748B" }}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#1E293B',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#fff'
+                  backgroundColor: "#1E293B",
+                  border: "none",
+                  borderRadius: "8px",
+                  color: "#fff",
                 }}
               />
               <Legend />
