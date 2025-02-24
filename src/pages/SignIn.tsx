@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"; // Import Link
 import { supabase } from "@/lib/supabase";
 
 const SignIn = () => {
@@ -50,6 +50,14 @@ const SignIn = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-card rounded-lg shadow-md p-8">
+        {/* Back Button */}
+        <Link
+          to="/"
+          className="text-sm text-muted-foreground hover:text-primary hover:underline mb-4 inline-block"
+        >
+          &larr; Back to Home
+        </Link>
+
         <h2 className="text-2xl font-bold text-center text-foreground mb-8">
           Welcome Back
         </h2>
