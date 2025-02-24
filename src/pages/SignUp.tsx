@@ -66,18 +66,18 @@ const SignUp = () => {
       // 2. Upload ID card if provided
       let idCardUrl = null;
       if (formData.idCard) {
-        const fileExt = formData.idCard.name.split('.').pop();
+        const fileExt = formData.idCard.name.split(".").pop();
         const fileName = `${authData.user.id}-${Math.random()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('id-cards')
+          .from("id-cards")
           .upload(fileName, formData.idCard);
 
         if (uploadError) throw uploadError;
 
         // Get the public URL of the uploaded file
         const { data: publicUrlData } = supabase.storage
-          .from('id-cards')
+          .from("id-cards")
           .getPublicUrl(fileName);
         idCardUrl = publicUrlData.publicUrl;
       }
@@ -245,10 +245,12 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md p-8 space-y-6">
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-semibold tracking-tight">Create an Account</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            Create an Account
+          </h1>
           <p className="text-sm text-muted-foreground">
             Step {step} of 3:{" "}
             {step === 1
