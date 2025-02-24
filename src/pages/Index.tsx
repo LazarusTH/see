@@ -1,115 +1,89 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, Wallet, Clock, Users } from "lucide-react";
 import { motion } from "framer-motion";
+import { ArrowRight, Shield, Wallet, Clock, Users } from "lucide-react";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-indigo-600 to-purple-500 text-white overflow-hidden">
-        <nav className="container mx-auto flex justify-between items-center py-6 px-6">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-2xl font-bold"
-          >
-            Cashora
-          </motion.div>
-          <div className="space-x-4">
-            <Link to="/signin">
-              <Button variant="ghost" className="text-white">Sign In</Button>
-            </Link>
-            <Link to="/signup">
-              <Button className="bg-white text-indigo-600">Get Started</Button>
-            </Link>
-          </div>
-        </nav>
-
-        <div className="container mx-auto px-6 text-center py-20">
-          <motion.h1 
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-5xl font-bold tracking-tight leading-tight"
-          >
-            Revolutionizing Digital Finance
-          </motion.h1>
-          <p className="text-lg opacity-80 mt-4 max-w-2xl mx-auto">
-            Secure, seamless, and smart financial solutions for the modern age.
-          </p>
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.3 }}
-            className="mt-6"
-          >
-            <Link to="/signup">
-              <Button size="lg" className="bg-white text-indigo-600 gap-2">
-                Get Started <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </motion.div>
+    <div className="min-h-screen bg-gradient-to-b from-blue-900 to-black text-white">
+      {/* Navbar */}
+      <nav className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="text-3xl font-extrabold text-white">Cashora</div>
+        <div className="space-x-4">
+          <Link to="/signin">
+            <Button variant="ghost" className="text-white border border-white">Sign In</Button>
+          </Link>
+          <Link to="/signup">
+            <Button className="bg-blue-500 hover:bg-blue-600">Get Started</Button>
+          </Link>
         </div>
+      </nav>
+
+      {/* Hero Section */}
+      <div className="container mx-auto text-center py-20 px-6">
+        <motion.h1 
+          className="text-6xl font-bold tracking-tight mb-6"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+        >
+          Secure Financial Solutions <br /> for the Digital Age
+        </motion.h1>
+        <motion.p 
+          className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          Experience seamless transactions, robust security, and complete financial management with Cashora’s next-gen platform.
+        </motion.p>
+        <Link to="/signup">
+          <Button size="lg" className="bg-gradient-to-r from-blue-500 to-blue-700 hover:to-blue-800 transition-transform transform hover:scale-105">
+            Start Your Journey <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </Link>
       </div>
 
       {/* Features Section */}
-      <div className="py-20 bg-white">
-        <div className="container mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold">Why Choose Cashora?</h2>
-          <div className="grid md:grid-cols-3 gap-12 mt-10">
-            {[{
-              icon: <Shield className="w-12 h-12 text-indigo-600" />, 
-              title: "Top-notch Security", 
-              description: "Advanced encryption and fraud protection."
-            }, {
-              icon: <Wallet className="w-12 h-12 text-indigo-600" />, 
-              title: "Easy Transfers", 
-              description: "Fast and effortless transactions anytime."
-            }, {
-              icon: <Clock className="w-12 h-12 text-indigo-600" />, 
-              title: "24/7 Access", 
-              description: "Manage your funds anywhere, anytime."
-            }].map((feature, index) => (
-              <motion.div 
-                key={index} 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.2 }}
-                viewport={{ once: true }}
-                className="p-6 bg-gray-100 rounded-lg shadow-lg"
-              >
-                {feature.icon}
-                <h3 className="text-xl font-semibold mt-4">{feature.title}</h3>
-                <p className="text-gray-600 mt-2">{feature.description}</p>
-              </motion.div>
-            ))}
+      <div className="py-20 bg-gray-900">
+        <div className="container mx-auto text-center">
+          <h2 className="text-4xl font-bold mb-12">Why Choose Cashora?</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <motion.div className="p-6 bg-gray-800 rounded-lg shadow-lg" whileHover={{ scale: 1.05 }}>
+              <Shield className="w-12 h-12 text-blue-400 mb-4 mx-auto" />
+              <h3 className="text-xl font-semibold mb-2">Secure Transactions</h3>
+              <p className="text-gray-300">State-of-the-art security measures to protect your financial data.</p>
+            </motion.div>
+            <motion.div className="p-6 bg-gray-800 rounded-lg shadow-lg" whileHover={{ scale: 1.05 }}>
+              <Wallet className="w-12 h-12 text-blue-400 mb-4 mx-auto" />
+              <h3 className="text-xl font-semibold mb-2">Easy Transfers</h3>
+              <p className="text-gray-300">Send and receive money instantly with our streamlined system.</p>
+            </motion.div>
+            <motion.div className="p-6 bg-gray-800 rounded-lg shadow-lg" whileHover={{ scale: 1.05 }}>
+              <Clock className="w-12 h-12 text-blue-400 mb-4 mx-auto" />
+              <h3 className="text-xl font-semibold mb-2">24/7 Access</h3>
+              <p className="text-gray-300">Manage your finances anytime, anywhere with our always-on platform.</p>
+            </motion.div>
           </div>
         </div>
       </div>
 
-      {/* CTA Section */}
-      <div className="py-20 bg-indigo-600 text-white text-center">
-        <h2 className="text-3xl font-bold">Join Cashora Today</h2>
-        <p className="mt-4 text-lg opacity-90">Secure your financial future with Cashora.</p>
+      {/* Call to Action */}
+      <div className="bg-blue-700 py-20 text-center">
+        <h2 className="text-4xl font-bold mb-6">Ready to Get Started?</h2>
+        <p className="text-lg text-gray-200 mb-8">
+          Join thousands of users who trust Cashora for their financial needs.
+        </p>
         <Link to="/signup">
-          <Button size="lg" variant="secondary" className="mt-6">
-            Sign Up Now <ArrowRight className="w-4 h-4" />
+          <Button size="lg" className="bg-white text-blue-700 hover:bg-gray-200">
+            Create Your Account <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </Link>
       </div>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
-        <div className="container mx-auto px-6 grid md:grid-cols-3 gap-8">
-          <div>
-            <h3 className="text-lg font-semibold text-white">Cashora</h3>
-            <p className="mt-2">Secure and seamless financial solutions.</p>
-          </div>
-         
-        <div className="text-center mt-8 text-sm">
-          © {new Date().getFullYear()} Cashora. All rights reserved.
-        </div>
+      <footer className="bg-black py-12 text-center text-gray-400">
+        <p>&copy; {new Date().getFullYear()} Cashora. All rights reserved.</p>
       </footer>
     </div>
   );
