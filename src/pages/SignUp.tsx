@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"; // Import Link
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -247,6 +247,14 @@ const SignUp = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md p-8 space-y-6">
+        {/* Back Button */}
+        <Link
+          to="/"
+          className="text-sm text-muted-foreground hover:text-primary hover:underline mb-4 inline-block"
+        >
+          &larr; Back to Home
+        </Link>
+
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">
             Create an Account
