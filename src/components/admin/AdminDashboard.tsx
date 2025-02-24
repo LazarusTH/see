@@ -58,9 +58,16 @@ const AdminDashboard = () => {
     },
   });
 
+  // Log the data for debugging
+  console.log("Stats:", stats);
+  console.log("Transaction History:", transactionHistory);
+
   if (isStatsLoading || isHistoryLoading) {
     return <div>Loading...</div>;
   }
+
+  // Access the first element of the stats array
+  const statsData = stats ? stats[0] : null;
 
   return (
     <div className="space-y-6">
@@ -70,15 +77,15 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6">
           <h3 className="text-sm font-medium text-muted-foreground">Total Users</h3>
-          <p className="text-2xl font-bold">{stats?.total_users || 0}</p>
+          <p className="text-2xl font-bold">{statsData?.total_users || 0}</p>
         </Card>
         <Card className="p-6">
           <h3 className="text-sm font-medium text-muted-foreground">Total Transactions</h3>
-          <p className="text-2xl font-bold">{stats?.total_transactions || 0}</p>
+          <p className="text-2xl font-bold">{statsData?.total_transactions || 0}</p>
         </Card>
         <Card className="p-6">
           <h3 className="text-sm font-medium text-muted-foreground">Total Fees</h3>
-          <p className="text-2xl font-bold">${stats?.total_fees?.toFixed(2) || "0.00"}</p>
+          <p className="text-2xl font-bold">${statsData?.total_fees?.toFixed(2) || "0.00"}</p>
         </Card>
       </div>
 
@@ -86,15 +93,15 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6">
           <h3 className="text-sm font-medium text-muted-foreground">Total Deposits</h3>
-          <p className="text-2xl font-bold">${stats?.total_deposits?.toFixed(2) || "0.00"}</p>
+          <p className="text-2xl font-bold">${statsData?.total_deposits?.toFixed(2) || "0.00"}</p>
         </Card>
         <Card className="p-6">
           <h3 className="text-sm font-medium text-muted-foreground">Total Withdrawals</h3>
-          <p className="text-2xl font-bold">${stats?.total_withdrawals?.toFixed(2) || "0.00"}</p>
+          <p className="text-2xl font-bold">${statsData?.total_withdrawals?.toFixed(2) || "0.00"}</p>
         </Card>
         <Card className="p-6">
           <h3 className="text-sm font-medium text-muted-foreground">Total Sent</h3>
-          <p className="text-2xl font-bold">${stats?.total_sent?.toFixed(2) || "0.00"}</p>
+          <p className="text-2xl font-bold">${statsData?.total_sent?.toFixed(2) || "0.00"}</p>
         </Card>
       </div>
 
