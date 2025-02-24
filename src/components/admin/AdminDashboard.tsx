@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
@@ -11,13 +12,21 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const AdminDashboard = () => {
+  const [month, setMonth] = useState<number | null>(null);
+  const [year, setYear] = useState<number | null>(null);
+
   // Fetch admin stats
-  const { data: stats, isLoading: isStatsLoading } = useQuery({
-    queryKey: ["adminStats"],
+  const { data: stats, isLoading: isStatsLoading, refetch: refetchStats } = useQuery({
+    queryKey: ["adminStats", month, year],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_admin_dashboard_stats");
+      const { data, error } = await supabase.rpc("get_admin_dashboard_stats", {
+        month,
+        year,
+      });
       if (error) throw error;
       return data;
     },
@@ -25,14 +34,21 @@ const AdminDashboard = () => {
 
   // Fetch transaction history
   const { data: transactionHistory, isLoading: isHistoryLoading } = useQuery({
-    queryKey: ["transactionHistory"],
+    queryKey: ["transactionHistory", month, year],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("transactions")
         .select("type, amount, created_at")
         .order("created_at", { ascending: false })
         .limit(100);
 
+      if (month !== null && year !== null) {
+        query = query
+          .filter("created_at", "gte", new Date(year, month - 1, 1).toISOString())
+          .filter("created_at", "lte", new Date(year, month, 0).toISOString());
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
 
       // Process data for chart
@@ -58,13 +74,9 @@ const AdminDashboard = () => {
     },
   });
 
-  // Log the data for debugging
-  console.log("Stats:", stats);
-  console.log("Transaction History:", transactionHistory);
-
-  if (isStatsLoading || isHistoryLoading) {
-    return <div>Loading...</div>;
-  }
+  const handleFilter = () => {
+    refetchStats();
+  };
 
   // Access the first element of the stats array
   const statsData = stats ? stats[0] : null;
@@ -72,6 +84,27 @@ const AdminDashboard = () => {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold">Dashboard Overview</h2>
+
+      {/* Month/Year Filter */}
+      <div className="flex gap-4">
+        <Input
+          type="number"
+          placeholder="Month (1-12)"
+          value={month || ""}
+          onChange={(e) => setMonth(e.target.value ? parseInt(e.target.value) : null)}
+          min={1}
+          max={12}
+        />
+        <Input
+          type="number"
+          placeholder="Year (e.g., 2023)"
+          value={year || ""}
+          onChange={(e) => setYear(e.target.value ? parseInt(e.target.value) : null)}
+          min={2000}
+          max={2100}
+        />
+        <Button onClick={handleFilter}>Apply Filter</Button>
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
