@@ -17,10 +17,13 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     recipientEmail: "",
     receipt: null,
     fullName: "", // For deposit requests
+    accountNumber: "", // For withdrawal requests
+    accountHolderName: "", // For withdrawal requests
   });
   const [isLoading, setIsLoading] = useState(false);
   const [fees, setFees] = useState({ fee_type: "percentage", fee_value: 0 });
   const [userLimits, setUserLimits] = useState(null);
+  const [transactionStatus, setTransactionStatus] = useState("pending");
 
   // Fetch user limits and fees
   const { data: userLimitsData } = useQuery({
@@ -109,7 +112,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         .select("amount, created_at")
         .eq("user_id", user.id)
         .eq("type", type)
-        .eq("status", "approved")
+        .eq("status", "completed")
         .gte("created_at", limitStart.toISOString())
         .lte("created_at", limitEnd.toISOString());
 
@@ -154,11 +157,35 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         recipient_email: formData.recipientEmail || null,
         receipt_url: formData.receipt || null,
         full_name: formData.fullName || null, // For deposit requests
-        status: "pending",
+        status: transactionStatus, // Set transaction status
+        account_number: formData.accountNumber || null,
+        account_holder_name: formData.accountHolderName || null,
       };
 
       const { error } = await supabase.from("transactions").insert(transactionData);
       if (error) throw error;
+
+      // Handle balance adjustments based on transaction status
+      if (transactionStatus === "approved") {
+        if (type === "deposit") {
+          await supabase
+            .from("users")
+            .update({ balance: currentBalance + amount })
+            .eq("id", user.id);
+        } else if (type === "withdrawal" || type === "send") {
+          await supabase
+            .from("users")
+            .update({ balance: currentBalance - totalAmount })
+            .eq("id", user.id);
+        }
+      } else if (transactionStatus === "rejected") {
+        if (type === "withdrawal" || type === "send") {
+          await supabase
+            .from("users")
+            .update({ balance: currentBalance + totalAmount })
+            .eq("id", user.id);
+        }
+      }
 
       toast.success("Transaction submitted successfully");
       onClose();
@@ -168,6 +195,8 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         recipientEmail: "",
         receipt: null,
         fullName: "",
+        accountNumber: "",
+        accountHolderName: "",
       });
     } catch (error) {
       toast.error(error.message);
@@ -238,6 +267,34 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Label>Account Holder's Name</Label>
+              <Input
+                type="text"
+                value={formData.accountHolderName}
+                onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
+                required
+              />
+              <Label>Account Number</Label>
+              <Input
+                type="text"
+                value={formData.accountNumber}
+                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                required
+              />
+            </>
+          )}
+
+          {/* Send Money-Specific Fields */}
+          {type === "send" && (
+            <>
+              <Label>Recipient Email</Label>
+              <Input
+                type="email"
+                value={formData.recipientEmail}
+                onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })}
+                required
+              />
             </>
           )}
 
