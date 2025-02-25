@@ -21,25 +21,8 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [fees, setFees] = useState({ fee_type: "percentage", fee_value: 0 });
-
-  // Fetch user limits
-  const { data: userLimits } = useQuery({
-    queryKey: ["userLimits", type],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data: limitsData } = await supabase
-        .from("user_limits")
-        .select("daily_limit, weekly_limit, monthly_limit")
-        .eq("user_id", user.id)
-        .eq("transaction_type", TRANSACTION_TYPES[type])
-        .single();
-
-      return limitsData;
-    },
-    enabled: isOpen && !!TRANSACTION_TYPES[type],
-  });
+  const [calculatedFee, setCalculatedFee] = useState(0);
+  const [totalWithFees, setTotalWithFees] = useState(0);
 
   // Fetch transaction fees
   const { data: feeData } = useQuery({
@@ -64,10 +47,18 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     }
   }, [feeData]);
 
-  // Calculate transaction fee
-  const calculateFee = (amount) => {
-    return fees.fee_type === "percentage" ? (amount * fees.fee_value) / 100 : fees.fee_value;
-  };
+  // Calculate transaction fee dynamically
+  useEffect(() => {
+    const amount = parseFloat(formData.amount);
+    if (!isNaN(amount) && amount > 0) {
+      const fee = fees.fee_type === "percentage" ? (amount * fees.fee_value) / 100 : fees.fee_value;
+      setCalculatedFee(fee);
+      setTotalWithFees(amount + fee);
+    } else {
+      setCalculatedFee(0);
+      setTotalWithFees(0);
+    }
+  }, [formData.amount, fees]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -79,41 +70,13 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const amount = parseFloat(formData.amount);
       if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount");
 
-      const fee = calculateFee(amount);
-      const totalAmount = amount + fee;
-
-      if ((type === "withdrawal" || type === "send") && totalAmount > currentBalance) {
+      if ((type === "withdrawal" || type === "send") && totalWithFees > currentBalance) {
         throw new Error("Insufficient balance");
       }
 
-      // Check transaction limits
-      const { daily_limit, weekly_limit, monthly_limit } = userLimits || {};
-      const { data: transactions } = await supabase
-        .from("transactions")
-        .select("amount, created_at, status")
-        .eq("user_id", user.id)
-        .eq("type", type);
-      
-      const now = new Date();
-      const dailyTotal = transactions
-        .filter(t => new Date(t.created_at) > new Date(now.setHours(0, 0, 0, 0)))
-        .reduce((sum, t) => sum + t.amount, 0);
-      
-      const weeklyTotal = transactions
-        .filter(t => new Date(t.created_at) > new Date(now.setDate(now.getDate() - 7)))
-        .reduce((sum, t) => sum + t.amount, 0);
-      
-      const monthlyTotal = transactions
-        .filter(t => new Date(t.created_at) > new Date(now.setMonth(now.getMonth() - 1)))
-        .reduce((sum, t) => sum + t.amount, 0);
-      
-      if (daily_limit && dailyTotal + amount > daily_limit) throw new Error("Daily limit exceeded");
-      if (weekly_limit && weeklyTotal + amount > weekly_limit) throw new Error("Weekly limit exceeded");
-      if (monthly_limit && monthlyTotal + amount > monthly_limit) throw new Error("Monthly limit exceeded");
-
       // Deduct balance (even in pending state)
       if (type === "withdrawal" || type === "send") {
-        await supabase.rpc("update_balance", { user_id: user.id, amount: -totalAmount });
+        await supabase.rpc("update_balance", { user_id: user.id, amount: -totalWithFees });
       }
 
       // Insert transaction
@@ -121,8 +84,8 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         user_id: user.id,
         type,
         amount,
-        fee,
-        total_amount: totalAmount,
+        fee: calculatedFee,
+        total_amount: totalWithFees,
         bank_id: formData.bankId || null,
         recipient_email: formData.recipientEmail || null,
         account_holder: formData.accountHolder || null,
@@ -152,6 +115,13 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Label>Amount</Label>
           <Input type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} required />
+
+          <div className="text-sm text-gray-600">
+            Fee: <span className="font-bold">{calculatedFee.toFixed(2)}</span>
+          </div>
+          <div className="text-sm text-gray-600">
+            Total with fees: <span className="font-bold">{totalWithFees.toFixed(2)}</span>
+          </div>
 
           {type === "deposit" && (
             <>
