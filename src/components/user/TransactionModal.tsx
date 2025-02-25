@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "send", deposit: "deposit" };
+const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "sending", deposit: "deposit" };
 
 const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
   const [formData, setFormData] = useState({
@@ -43,16 +43,33 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         .eq("transaction_type", transactionType)
         .single();
 
-      if (feesError || !feesData) {
-        setFees({ fee_type: "percentage", fee_value: 0 }); // Default fees
-      } else {
-        setFees(feesData);
-      }
+      if (limitsError || feesError) throw limitsError || feesError;
 
-      if (limitsError) throw limitsError;
+      setFees(feesData || { fee_type: "percentage", fee_value: 0 });
       return limitsData;
     },
     enabled: isOpen && !!TRANSACTION_TYPES[type],
+  });
+
+  const { data: userBanks = [] } = useQuery({
+    queryKey: ["userBanks"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase
+        .from("user_banks")
+        .select("bank_id, banks(name)")
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      return data.map((item) => ({
+        bank_id: item.bank_id,
+        bank_name: item.banks.name,
+      }));
+    },
+    enabled: isOpen && type === "withdrawal",
   });
 
   const calculateFee = (amount) => {
@@ -63,7 +80,43 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     }
   };
 
-  const updateBalance = async (userId, amount) => {
+  const checkLimits = async (amount) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !userLimits) return;
+
+    const limitPeriods = {
+      daily: 24 * 60 * 60 * 1000,
+      weekly: 7 * 24 * 60 * 60 * 1000,
+      monthly: 30 * 24 * 60 * 60 * 1000,
+    };
+
+    for (const [period, duration] of Object.entries(limitPeriods)) {
+      const limit = userLimits[`${period}_limit`];
+      if (!limit) continue;
+
+      const limitStart = new Date(userLimits.limit_created_at);
+      const limitEnd = new Date(limitStart.getTime() + duration);
+
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("amount, created_at")
+        .eq("user_id", user.id)
+        .eq("type", type)
+        .eq("status", "approved")
+        .gte("created_at", limitStart.toISOString())
+        .lte("created_at", limitEnd.toISOString());
+
+      if (error) throw error;
+
+      const totalSpent = data.reduce((sum, tx) => sum + tx.amount, 0);
+
+      if (totalSpent + amount > limit) {
+        throw new Error(`Exceeds ${period} limit of ${limit}`);
+      }
+    }
+  };
+
+  const updateBalance = async (userId, amount, action) => {
     const { data, error } = await supabase
       .from("profiles")
       .select("balance")
@@ -72,7 +125,34 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
 
     if (error) throw new Error("Unable to fetch user balance");
 
-    const newBalance = data.balance + amount;
+    let newBalance = data.balance;
+    if (action === "deduct") {
+      newBalance -= amount;
+    } else if (action === "add") {
+      newBalance += amount;
+    }
+
+    const { updateError } = await supabase
+      .from("profiles")
+      .update({ balance: newBalance })
+      .eq("id", userId);
+
+    if (updateError) throw new Error("Unable to update user balance");
+  };
+
+  const refundBalance = async (userId, amount, fee, action) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("balance")
+      .eq("id", userId)
+      .single();
+
+    if (error) throw new Error("Unable to fetch user balance");
+
+    let newBalance = data.balance;
+    if (action === "deduct") {
+      newBalance += (amount + fee); // Refund both the amount and the fee
+    }
 
     const { updateError } = await supabase
       .from("profiles")
@@ -95,6 +175,8 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         throw new Error("Insufficient balance");
       }
 
+      if (TRANSACTION_TYPES[type]) await checkLimits(amount);
+
       const fee = calculateFee(amount);
       const totalAmount = amount + fee;
 
@@ -111,16 +193,13 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         status: "pending",
       };
 
-      const { data: transaction, error } = await supabase
-        .from("transactions")
-        .insert(transactionData)
-        .select()
-        .single();
-
+      const { error } = await supabase.from("transactions").insert(transactionData);
       if (error) throw error;
 
-      if (type === "withdrawal" || type === "send") {
-        await updateBalance(user.id, -totalAmount); // Deduct the total amount (amount + fee)
+      if (type === "deposit") {
+        await updateBalance(user.id, amount, "add");
+      } else if (type === "withdrawal" || type === "send") {
+        await updateBalance(user.id, totalAmount, "deduct");
       }
 
       toast.success("Transaction submitted successfully");
@@ -139,20 +218,19 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     }
   };
 
-  const handleRejectTransaction = async (transactionId, userId, amount, fee) => {
+  const handleRejectTransaction = async (transactionId, userId, amount, fee, transactionType) => {
     try {
-      // Update transaction status to "rejected"
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from("transactions")
         .update({ status: "rejected" })
         .eq("id", transactionId);
 
-      if (updateError) throw new Error("Unable to update transaction status to rejected");
+      if (error) throw new Error("Unable to update transaction status to rejected");
 
-      // Refund the amount and fee to the user's balance
-      await updateBalance(userId, amount + fee);
-
-      toast.success("Transaction rejected and balance refunded.");
+      if (transactionType === "withdrawal" || transactionType === "send") {
+        await refundBalance(userId, amount, fee, "deduct");
+        toast.success("Transaction rejected and balance refunded.");
+      }
     } catch (error) {
       toast.error(error.message);
     }
