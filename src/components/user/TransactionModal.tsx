@@ -80,48 +80,47 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     }
   };
 
- const checkLimits = async (amount) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !userLimits) return;
+  const checkLimits = async (amount) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !userLimits) return;
 
-  // Define limit periods in milliseconds
-  const limitPeriods = {
-    daily: 24 * 60 * 60 * 1000, // 24 hours
-    weekly: 7 * 24 * 60 * 60 * 1000, // 7 days
-    monthly: 30 * 24 * 60 * 60 * 1000, // 30 days
-  };
+    // Define limit periods in milliseconds
+    const limitPeriods = {
+      daily: 24 * 60 * 60 * 1000, // 24 hours
+      weekly: 7 * 24 * 60 * 60 * 1000, // 7 days
+      monthly: 30 * 24 * 60 * 60 * 1000, // 30 days
+    };
 
-  // Loop over the periods (daily, weekly, monthly)
-  for (const [period, duration] of Object.entries(limitPeriods)) {
-    const limit = userLimits[`${period}_limit`];
-    if (!limit) continue; // Skip if no limit is set for this period
+    // Loop over the periods (daily, weekly, monthly)
+    for (const [period, duration] of Object.entries(limitPeriods)) {
+      const limit = userLimits[`${period}_limit`];
+      if (!limit) continue; // Skip if no limit is set for this period
 
-    // Calculate the start of the limit period
-    const limitStart = new Date(userLimits.limit_created_at);
-    const limitEnd = new Date(limitStart.getTime() + duration);
+      // Calculate the start of the limit period
+      const limitStart = new Date(userLimits.limit_created_at);
+      const limitEnd = new Date(limitStart.getTime() + duration);
 
-    // Fetch transactions within the limit period
-    const { data, error } = await supabase
-      .from("transactions")
-      .select("amount, created_at")
-      .eq("user_id", user.id)
-      .eq("type", type)
-      .eq("status", "approved")
-      .gte("created_at", limitStart.toISOString()) // From limit start date
-      .lte("created_at", limitEnd.toISOString()); // To limit end date
+      // Fetch transactions within the limit period
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("amount, created_at")
+        .eq("user_id", user.id)
+        .eq("type", type)
+        .eq("status", "approved")
+        .gte("created_at", limitStart.toISOString()) // From limit start date
+        .lte("created_at", limitEnd.toISOString()); // To limit end date
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // Sum the transaction amounts
-    const totalSpent = data.reduce((sum, tx) => sum + tx.amount, 0);
+      // Sum the transaction amounts
+      const totalSpent = data.reduce((sum, tx) => sum + tx.amount, 0);
 
-    // Check if the new transaction would exceed the limit
-    if (totalSpent + amount > limit) {
-      throw new Error(`Exceeds ${period} limit of ${limit}`);
+      // Check if the new transaction would exceed the limit
+      if (totalSpent + amount > limit) {
+        throw new Error(`Exceeds ${period} limit of ${limit}`);
+      }
     }
-  }
-};
-
+  };
 
   const updateBalance = async (userId, amount, action) => {
     const { data, error } = await supabase
@@ -269,7 +268,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
           <div className="space-y-2">
             <Label>Fee</Label>
             <div className="text-sm text-gray-600">
-              {fees.fee_type === "percentage" ? ${fees.fee_value}% : $${fees.fee_value}}
+              {fees.fee_type === "percentage" ? `${fees.fee_value}%` : `$${fees.fee_value}`}
             </div>
             <div className="text-sm text-gray-600">Fee Amount: ${fee.toFixed(2)}</div>
           </div>
