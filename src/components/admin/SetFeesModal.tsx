@@ -37,28 +37,31 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
 
   // Fetch fees for the specific transaction type and user
   useEffect(() => {
-    const fetchFees = async () => {
-      if (!userData?.id) return;
+  const fetchFees = async () => {
+  if (!userData?.id) return;
 
-      const { data, error } = await supabase
-        .from("fees")
-        .select("fee_type, fee_value")
-        .eq("user_id", userData.id)
-        .eq("transaction_type", TRANSACTION_TYPES[type])
-        .single();
+  const { data, error } = await supabase
+    .from("transactions") // ✅ Correct table name
+    .select("fee_type, fee_value")
+    .eq("transaction_type", "withdrawal")
+    .eq("user_id", userData.id)
+    .order("created_at", { ascending: false }) // ✅ Get the latest fee
+    .limit(1) // ✅ Ensure only 1 row is returned
+    .maybeSingle(); // ✅ Avoids error if multiple rows exist
 
-      if (error) {
-        console.error("Error fetching fees:", error.message);
-        return;
-      }
+  if (error) {
+    console.error("Error fetching fees:", error.message);
+    return;
+  }
 
-      if (data) {
-        setFees({ fee_type: data.fee_type, fee_value: parseFloat(data.fee_value) });
-      }
-    };
+  if (data) {
+    setFees({
+      fee_type: data.fee_type,
+      fee_value: parseFloat(data.fee_value),
+    });
+  }
+};
 
-    fetchFees();
-  }, [userData, type]);
 
   // Calculate transaction fee dynamically
   useEffect(() => {
