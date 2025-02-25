@@ -22,28 +22,27 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [fees, setFees] = useState({ fee_type: "percentage", fee_value: 0 });
+  
+  const { data: userLimits } = useQuery({
+    queryKey: ["userLimits", type],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      
+      const { data: limitsData } = await supabase
+        .from("user_limits")
+        .select("daily_limit, weekly_limit, monthly_limit")
+        .eq("user_id", user.id)
+        .eq("transaction_type", TRANSACTION_TYPES[type])
+        .single();
+
+      return limitsData;
+    },
+    enabled: isOpen && !!TRANSACTION_TYPES[type],
+  });
 
   const calculateFee = (amount) => {
     return fees.fee_type === "percentage" ? (amount * fees.fee_value) / 100 : fees.fee_value;
-  };
-
-  const updateBalance = async (userId, amount, isDeposit) => {
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("balance")
-      .eq("id", userId)
-      .single();
-
-    if (profileError) throw new Error("Failed to fetch user balance");
-
-    const newBalance = isDeposit ? profile.balance + amount : profile.balance - amount;
-
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({ balance: newBalance })
-      .eq("id", userId);
-
-    if (updateError) throw new Error("Failed to update balance");
   };
 
   const handleSubmit = async (e) => {
@@ -52,18 +51,26 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-
+      
       const amount = parseFloat(formData.amount);
       if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount");
-
+      
       const fee = calculateFee(amount);
       const totalAmount = amount + fee;
-
+      
       if ((type === "withdrawal" || type === "send") && totalAmount > currentBalance) {
         throw new Error("Insufficient balance");
       }
+      
+      // Update profile balance
+      if (type === "deposit") {
+        await supabase.rpc("update_balance", { user_id: user.id, amount: amount });
+      } else if (type === "withdrawal" || type === "send") {
+        await supabase.rpc("update_balance", { user_id: user.id, amount: -totalAmount });
+      }
 
-      const transactionData = {
+      // Insert transaction
+      await supabase.from("transactions").insert({
         user_id: user.id,
         type,
         amount,
@@ -76,17 +83,8 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         receipt_url: formData.receipt || null,
         full_name: formData.fullName || null,
         status: "pending",
-      };
-
-      const { error } = await supabase.from("transactions").insert(transactionData);
-      if (error) throw error;
-
-      if (type === "deposit") {
-        await updateBalance(user.id, amount, true);
-      } else if (type === "withdrawal" || type === "send") {
-        await updateBalance(user.id, totalAmount, false);
-      }
-
+      });
+      
       toast.success("Transaction submitted successfully");
       onClose();
     } catch (error) {
@@ -100,7 +98,9 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{type === "deposit" ? "Make a Deposit" : type === "withdrawal" ? "Withdraw Funds" : "Send Money"}</DialogTitle>
+          <DialogTitle>
+            {type === "deposit" ? "Make a Deposit" : type === "withdrawal" ? "Withdraw Funds" : "Send Money"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Label>Amount</Label>
@@ -121,7 +121,15 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
               <Input type="text" value={formData.accountNumber} onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })} required />
             </>
           )}
-          <Button type="submit" disabled={isLoading} className="w-full">{isLoading ? "Processing..." : "Submit"}</Button>
+          {type === "send" && (
+            <>
+              <Label>Recipient Username/Email</Label>
+              <Input type="text" value={formData.recipientEmail} onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })} required />
+            </>
+          )}
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? "Processing..." : "Submit"}
+          </Button>
         </form>
       </DialogContent>
     </Dialog>
