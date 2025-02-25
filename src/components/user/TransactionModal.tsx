@@ -66,7 +66,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const { daily_limit, weekly_limit, monthly_limit } = userLimits || {};
       const { data: transactions } = await supabase
         .from("transactions")
-        .select("amount, created_at")
+        .select("amount, created_at, status")
         .eq("user_id", user.id)
         .eq("type", type);
       
@@ -90,7 +90,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       } else if (type === "withdrawal" || type === "send") {
         await supabase.rpc("update_balance", { user_id: user.id, amount: -totalAmount });
       }
-
+      
       // Insert transaction
       await supabase.from("transactions").insert({
         user_id: user.id,
@@ -127,14 +127,6 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Label>Amount</Label>
           <Input type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} required />
-          {type === "deposit" && (
-            <>
-              <Label>Full Name</Label>
-              <Input type="text" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} required />
-              <Label>Upload Receipt</Label>
-              <Input type="file" onChange={(e) => setFormData({ ...formData, receipt: e.target.files[0] })} required />
-            </>
-          )}
           {type === "withdrawal" && (
             <>
               <Label>Account Holder's Name</Label>
