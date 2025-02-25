@@ -117,7 +117,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
 
     // Check if the new transaction would exceed the limit
     if (totalSpent + amount > limit) {
-      throw new Error(Exceeds ${period} limit of ${limit});
+      throw new Error(`Exceeds ${period} limit of ${limit}`);
     }
   }
 };
