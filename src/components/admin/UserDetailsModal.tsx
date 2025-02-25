@@ -105,19 +105,20 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
               </div>
             </Card>
 
-            {/* ID Card (Display based on URL) */}
-            {user.id_card_url && (
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">ID Card</h3>
-                <div className="w-full">
-                  <img
-                    src={user.id_card_url}
-                    alt="ID Card"
-                    className="max-w-full h-auto rounded-lg"
-                  />
-                </div>
-              </Card>
-            )}
+           {/* ID Card (Direct Display) */}
+{user.id_card_url && (
+  <Card className="p-6">
+    <h3 className="text-lg font-semibold mb-4">ID Card</h3>
+    <div className="flex justify-center">
+      <img
+        src={user.id_card_url}
+        alt="ID Card"
+        className="w-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl h-auto rounded-lg shadow-md"
+      />
+    </div>
+  </Card>
+)}
+
 
             {/* Transaction Limits */}
             <Card className="p-6">
