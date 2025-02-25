@@ -40,7 +40,7 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
       return data;
     },
   });
-
+  
   const { data: userBanks } = useQuery({
     queryKey: ["userBanks", user.id],
     queryFn: async () => {
@@ -105,19 +105,19 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
               </div>
             </Card>
 
-            {/* ID Card */}
-            {user.id_card_url && (
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">ID Card</h3>
-                <div className="w-full">
-                  <img
-                    src={user.id_card_url}
-                    alt="ID Card"
-                    className="max-w-full h-auto rounded-lg"
-                  />
-                </div>
-              </Card>
-            )}
+           {/* ID Card */}
+{user.id_card_url && user.id_card_url !== "" ? (
+  <Card className="p-6">
+    <h3 className="text-lg font-semibold mb-4">ID Card</h3>
+    <div className="w-full">
+      <img
+        src={user.id_card_url}
+        alt="ID Card"
+        className="max-w-full h-auto rounded-lg"
+      />
+    </div>
+  </Card>
+) : null}
 
             {/* Transaction Limits */}
             <Card className="p-6">
