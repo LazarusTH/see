@@ -20,9 +20,10 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [fees, setFees] = useState({ fee_type: "percentage", fee_value: 0 });
+  const [userLimits, setUserLimits] = useState(null);
 
   // Fetch user limits and fees
-  const { data: userLimits } = useQuery({
+  const { data: userLimitsData } = useQuery({
     queryKey: ["userLimits", type],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -85,7 +86,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
 
   const checkLimits = async (amount) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !userLimits) return;
+    if (!user || !userLimitsData) return;
 
     // Define limit periods in milliseconds
     const limitPeriods = {
@@ -95,11 +96,11 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     };
 
     for (const [period, duration] of Object.entries(limitPeriods)) {
-      const limit = userLimits[`${period}_limit`];
+      const limit = userLimitsData[`${period}_limit`];
       if (!limit) continue; // Skip if no limit is set for this period
 
       // Calculate the start of the limit period
-      const limitStart = new Date(userLimits.limit_created_at);
+      const limitStart = new Date(userLimitsData.limit_created_at);
       const limitEnd = new Date(limitStart.getTime() + duration);
 
       // Fetch transactions within the limit period
@@ -253,8 +254,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
             <div className="text-sm text-gray-600">${totalAmount.toFixed(2)}</div>
           </div>
 
-          {/* Submit Button */}
-          <Button type="submit" disabled={isLoading} className="w-full">
+          <Button type="submit" disabled={isLoading}>
             {isLoading ? "Processing..." : "Submit"}
           </Button>
         </form>
