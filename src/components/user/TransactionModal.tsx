@@ -8,17 +8,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "send", deposit: "deposit" };
+const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "sending", deposit: "deposit" };
 
 const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
   const [formData, setFormData] = useState({
     amount: "",
-    bankId: "", // For withdrawals
-    accountHolderName: "", // For withdrawals
-    accountNumber: "", // For withdrawals
-    recipientEmail: "", // For sends
-    receipt: null, // For deposits
-    fullName: "", // For deposits
+    bankId: "", // Store the selected bank ID
+    recipientEmail: "",
+    receipt: null,
+    fullName: "", // For deposit requests
   });
   const [isLoading, setIsLoading] = useState(false);
   const [fees, setFees] = useState({ fee_type: "percentage", fee_value: 0 });
@@ -29,6 +27,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+
       const transactionType = TRANSACTION_TYPES[type];
       const { data: limitsData, error: limitsError } = await supabase
         .from("user_limits")
@@ -36,17 +35,20 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         .eq("user_id", user.id)
         .eq("transaction_type", transactionType)
         .single();
+
       const { data: feesData, error: feesError } = await supabase
         .from("fees")
         .select("fee_type, fee_value")
         .eq("user_id", user.id)
         .eq("transaction_type", transactionType)
         .single();
+
       if (limitsError || feesError) throw limitsError || feesError;
+
       setFees(feesData || { fee_type: "percentage", fee_value: 0 });
       return limitsData;
     },
-    enabled: isOpen && !!TRANSACTION_TYPES[type],
+    enabled: isOpen && !!TRANSACTION_TYPES[type], // Ensure this is a boolean
   });
 
   // Fetch assigned bank names for the user
@@ -55,20 +57,24 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+
+      // Join user_banks with banks to get bank names
       const { data, error } = await supabase
         .from("user_banks")
         .select("bank_id, banks(name)")
         .eq("user_id", user.id);
+
       if (error) throw error;
+
+      // Map the data to a simpler format
       return data.map((item) => ({
         bank_id: item.bank_id,
         bank_name: item.banks.name,
       }));
     },
-    enabled: isOpen && type === "withdrawal",
+    enabled: isOpen && type === "withdrawal", // Fetch only for withdrawal requests
   });
 
-  // Calculate fee based on the entered amount
   const calculateFee = (amount) => {
     if (fees.fee_type === "percentage") {
       return (amount * fees.fee_value) / 100;
@@ -77,20 +83,26 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     }
   };
 
-  // Check if the transaction exceeds any limits
   const checkLimits = async (amount) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !userLimits) return;
+
+    // Define limit periods in milliseconds
     const limitPeriods = {
       daily: 24 * 60 * 60 * 1000, // 24 hours
       weekly: 7 * 24 * 60 * 60 * 1000, // 7 days
       monthly: 30 * 24 * 60 * 60 * 1000, // 30 days
     };
+
     for (const [period, duration] of Object.entries(limitPeriods)) {
-      const limit = userLimits[`${period}_limit`];
+      const limit = userLimits[${period}_limit];
       if (!limit) continue; // Skip if no limit is set for this period
+
+      // Calculate the start of the limit period
       const limitStart = new Date(userLimits.limit_created_at);
       const limitEnd = new Date(limitStart.getTime() + duration);
+
+      // Fetch transactions within the limit period
       const { data, error } = await supabase
         .from("transactions")
         .select("amount, created_at")
@@ -99,15 +111,19 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         .eq("status", "approved")
         .gte("created_at", limitStart.toISOString())
         .lte("created_at", limitEnd.toISOString());
+
       if (error) throw error;
+
+      // Sum the transaction amounts
       const totalSpent = data.reduce((sum, tx) => sum + tx.amount, 0);
+
+      // Check if the new transaction would exceed the limit
       if (totalSpent + amount > limit) {
-        throw new Error(`Exceeds ${period} limit of $${limit}`);
+        throw new Error(Exceeds ${period} limit of ${limit});
       }
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -117,8 +133,6 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
 
       const amount = parseFloat(formData.amount);
       if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount");
-
-      // Check if the user has sufficient balance for withdrawals or sends
       if ((type === "withdrawal" || type === "send") && amount > currentBalance) {
         throw new Error("Insufficient balance");
       }
@@ -126,27 +140,22 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       // Check limits before proceeding
       if (TRANSACTION_TYPES[type]) await checkLimits(amount);
 
-      // Calculate fee and total amount
       const fee = calculateFee(amount);
       const totalAmount = amount + fee;
 
-      // Prepare transaction data
       const transactionData = {
         user_id: user.id,
         type,
         amount,
         fee,
         total_amount: totalAmount,
-        bank_id: formData.bankId || null, // For withdrawals
-        account_holder_name: formData.accountHolderName || null, // For withdrawals
-        account_number: formData.accountNumber || null, // For withdrawals
-        recipient_email: formData.recipientEmail || null, // For sends
-        receipt_url: formData.receipt?.name || null, // For deposits
-        full_name: formData.fullName || null, // For deposits
+        bank_id: formData.bankId || null, // Include the selected bank ID
+        recipient_email: formData.recipientEmail || null,
+        receipt_url: formData.receipt || null,
+        full_name: formData.fullName || null, // For deposit requests
         status: "pending",
       };
 
-      // Insert the transaction into the database
       const { error } = await supabase.from("transactions").insert(transactionData);
       if (error) throw error;
 
@@ -155,8 +164,6 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       setFormData({
         amount: "",
         bankId: "",
-        accountHolderName: "",
-        accountNumber: "",
         recipientEmail: "",
         receipt: null,
         fullName: "",
@@ -168,7 +175,6 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     }
   };
 
-  // Calculate fee and total amount dynamically
   const fee = calculateFee(parseFloat(formData.amount) || 0);
   const totalAmount = parseFloat(formData.amount) + fee;
 
@@ -176,13 +182,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {type === "deposit"
-              ? "Make a Deposit"
-              : type === "withdrawal"
-              ? "Withdraw Funds"
-              : "Send Money"}
-          </DialogTitle>
+          <DialogTitle>{type === "deposit" ? "Make a Deposit" : type === "withdrawal" ? "Withdraw Funds" : "Send Money"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Common Fields */}
@@ -237,33 +237,6 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
                   ))}
                 </SelectContent>
               </Select>
-              <Label>Account Holder's Name</Label>
-              <Input
-                type="text"
-                value={formData.accountHolderName}
-                onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
-                required
-              />
-              <Label>Account Number</Label>
-              <Input
-                type="text"
-                value={formData.accountNumber}
-                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                required
-              />
-            </>
-          )}
-
-          {/* Send-Specific Fields */}
-          {type === "send" && (
-            <>
-              <Label>Recipient Email</Label>
-              <Input
-                type="email"
-                value={formData.recipientEmail}
-                onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })}
-                required
-              />
             </>
           )}
 
@@ -271,7 +244,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
           <div className="space-y-2">
             <Label>Fee</Label>
             <div className="text-sm text-gray-600">
-              {fees.fee_type === "percentage" ? `${fees.fee_value}%` : `$${fees.fee_value}`}
+              {fees.fee_type === "percentage" ? ${fees.fee_value}% : $${fees.fee_value}}
             </div>
             <div className="text-sm text-gray-600">Fee Amount: ${fee.toFixed(2)}</div>
           </div>
