@@ -20,7 +20,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     fullName: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [fees, setFees] = useState({ fee_type: "percentage", fee_value: 0 });
+  const [fees, setFees] = useState({ fee_type: "", fee_value: 0 });
   const [calculatedFee, setCalculatedFee] = useState(0);
   const [totalWithFees, setTotalWithFees] = useState(0);
 
@@ -35,11 +35,10 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     enabled: isOpen,
   });
 
-  // Fetch fees set by admin for this user
-  const { data: feeData } = useQuery({
-    queryKey: ["fees", type, userData?.id],
-    queryFn: async () => {
-      if (!userData?.id) return null;
+  // Fetch fees for the specific transaction type and user
+  useEffect(() => {
+    const fetchFees = async () => {
+      if (!userData?.id) return;
 
       const { data, error } = await supabase
         .from("fees")
@@ -48,29 +47,29 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         .eq("transaction_type", TRANSACTION_TYPES[type])
         .single();
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: isOpen && !!userData?.id,
-  });
+      if (error) {
+        console.error("Error fetching fees:", error.message);
+        return;
+      }
 
-  // Set fees when data is loaded
-  useEffect(() => {
-    if (feeData) {
-      setFees(feeData);
-    }
-  }, [feeData]);
+      if (data) {
+        setFees({ fee_type: data.fee_type, fee_value: parseFloat(data.fee_value) });
+      }
+    };
+
+    fetchFees();
+  }, [userData, type]);
 
   // Calculate transaction fee dynamically
   useEffect(() => {
     const amount = parseFloat(formData.amount);
-    if (!isNaN(amount) && amount > 0) {
+    if (!isNaN(amount) && amount > 0 && fees.fee_value > 0) {
       const fee = fees.fee_type === "percentage" ? (amount * fees.fee_value) / 100 : fees.fee_value;
       setCalculatedFee(fee);
       setTotalWithFees(amount + fee);
     } else {
       setCalculatedFee(0);
-      setTotalWithFees(0);
+      setTotalWithFees(amount);
     }
   }, [formData.amount, fees]);
 
@@ -127,13 +126,24 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Label>Amount</Label>
-          <Input type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} required />
+          <Input
+            type="number"
+            value={formData.amount}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+            required
+          />
 
           <div className="text-sm text-gray-600">
-            Fee: <span className="font-bold">{calculatedFee.toFixed(2)}</span>
+            Fee Type: <span className="font-bold">{fees.fee_type || "N/A"}</span>
           </div>
           <div className="text-sm text-gray-600">
-            Total with fees: <span className="font-bold">{totalWithFees.toFixed(2)}</span>
+            Fee Value: <span className="font-bold">{fees.fee_value || "0"}</span>
+          </div>
+          <div className="text-sm text-gray-600">
+            Calculated Fee: <span className="font-bold">{calculatedFee.toFixed(2)}</span>
+          </div>
+          <div className="text-sm text-gray-600">
+            Total with Fees: <span className="font-bold">{totalWithFees.toFixed(2)}</span>
           </div>
 
           {type === "deposit" && (
@@ -146,16 +156,31 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
           {type === "withdrawal" && (
             <>
               <Label>Account Holder's Name</Label>
-              <Input type="text" value={formData.accountHolder} onChange={(e) => setFormData({ ...formData, accountHolder: e.target.value })} required />
+              <Input
+                type="text"
+                value={formData.accountHolder}
+                onChange={(e) => setFormData({ ...formData, accountHolder: e.target.value })}
+                required
+              />
               <Label>Account Number</Label>
-              <Input type="text" value={formData.accountNumber} onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })} required />
+              <Input
+                type="text"
+                value={formData.accountNumber}
+                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                required
+              />
             </>
           )}
 
           {type === "send" && (
             <>
               <Label>Recipient Username/Email</Label>
-              <Input type="text" value={formData.recipientEmail} onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })} required />
+              <Input
+                type="text"
+                value={formData.recipientEmail}
+                onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })}
+                required
+              />
             </>
           )}
 
