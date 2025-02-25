@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom"; // Import Link
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -46,6 +46,7 @@ const SignUp = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (step < 3) {
       setStep(step + 1);
       return;
@@ -67,7 +68,7 @@ const SignUp = () => {
       let idCardUrl = null;
       if (formData.idCard) {
         const fileExt = formData.idCard.name.split(".").pop();
-        const fileName = ${authData.user.id}-${Math.random()}.${fileExt};
+        const fileName = `${authData.user.id}-${Math.random()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from("id-cards")
@@ -247,7 +248,6 @@ const SignUp = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md p-8 space-y-6">
-        {/* Back Button */}
         <Link
           to="/"
           className="text-sm text-muted-foreground hover:text-primary hover:underline mb-4 inline-block"
@@ -273,33 +273,20 @@ const SignUp = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {renderStep()}
-
-          <div className="flex gap-4">
-            {step > 1 && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setStep(step - 1)}
-                className="flex-1"
-              >
-                Previous
-              </Button>
-            )}
-            <Button type="submit" className="flex-1" disabled={isLoading}>
-              {isLoading
-                ? "Creating Account..."
-                : step === 3
-                ? "Create Account"
-                : "Next"}
+          <div className="flex justify-between items-center">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep(Math.max(step - 1, 1))}
+              disabled={step === 1 || isLoading}
+            >
+              Back
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {step === 3 ? "Sign Up" : "Next"}
             </Button>
           </div>
         </form>
-
-        <div className="text-center text-sm">
-          <Link to="/signin" className="text-primary hover:underline">
-            Already have an account? Sign in
-          </Link>
-        </div>
       </Card>
     </div>
   );
