@@ -106,7 +106,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       .select("amount, created_at")
       .eq("user_id", user.id)
       .eq("type", type)
-      .eq("status", "completed")
+      .eq("status", "approved")
       .gte("created_at", limitStart.toISOString()) // From limit start date
       .lte("created_at", limitEnd.toISOString()); // To limit end date
 
