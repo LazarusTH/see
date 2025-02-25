@@ -1,191 +1,285 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Label } from "@/components/ui/label";
+import { supabase } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
+import { Eye, Download } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "sending", deposit: "deposit" };
+interface Transaction {
+  id: string;
+  type: "deposit" | "withdrawal" | "send";
+  amount: number;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  profiles: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  receipt_url?: string;
+  recipient_email?: string;
+  full_name?: string;
+  banks?: {
+    name: string;
+  };
+}
 
-const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
-  const [formData, setFormData] = useState({
-    amount: "",
-    bankId: "",
-    accountNumber: "",
-    accountHolder: "",
-    recipientEmail: "",
-    receipt: null,
-    fullName: "",
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [fees, setFees] = useState({ fee_type: "percentage", fee_value: 0 });
-  const [calculatedFee, setCalculatedFee] = useState(0);
-  const [totalWithFees, setTotalWithFees] = useState(0);
+interface TransactionManagementProps {
+  type: "deposit" | "withdrawal" | "send";
+}
 
-  // Fetch transaction fees
-  const { data: feeData, error: feeError } = useQuery({
-    queryKey: ["fees", type],
+const TransactionManagement = ({ type }: TransactionManagementProps) => {
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+
+  const { data: transactions, refetch } = useQuery<Transaction[]>({
+    queryKey: ["transactions", type],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("fees")
-        .select("fee_type, fee_value")
-        .eq("transaction_type", TRANSACTION_TYPES[type])
-        .limit(1);  // Ensure that we only get one row
+        .from("transactions")
+        .select(`
+          id, type, amount, status, created_at,
+          profiles:user_id(first_name, last_name, email),
+          banks(name),
+          receipt_url,
+          recipient_email,
+          full_name
+        `)
+        .eq("type", type)
+        .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      return data[0]; // Return the first item from the result
+      if (error) {
+        console.error("Error fetching transactions:", error);
+        throw error;
+      }
+
+      return data as Transaction[];
     },
-    enabled: isOpen && !!TRANSACTION_TYPES[type],
   });
 
-  // Handle fee data when it is loaded
-  useEffect(() => {
-    if (feeData) {
-      setFees(feeData);
-    }
-  }, [feeData]);
-
-  // Calculate transaction fee dynamically based on the amount and fees
-  useEffect(() => {
-    const amount = parseFloat(formData.amount);
-    if (!isNaN(amount) && amount > 0) {
-      const fee =
-        fees.fee_type === "percentage" ? (amount * fees.fee_value) / 100 : fees.fee_value;
-      setCalculatedFee(fee);
-      setTotalWithFees(amount + fee);
-    } else {
-      setCalculatedFee(0);
-      setTotalWithFees(0);
-    }
-  }, [formData.amount, fees]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
+  const handleApprove = async (transaction: Transaction) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const amount = parseFloat(formData.amount);
-      if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount");
-
-      if ((type === "withdrawal" || type === "send") && totalWithFees > currentBalance) {
-        throw new Error("Insufficient balance");
-      }
-
-      // Deduct balance (even in pending state)
-      if (type === "withdrawal" || type === "send") {
-        await supabase.rpc("update_balance", { user_id: user.id, amount: -totalWithFees });
-      }
-
-      // Insert transaction
-      const { error } = await supabase.from("transactions").insert({
-        user_id: user.id,
-        type,
-        amount,
-        fee: calculatedFee,
-        total_amount: totalWithFees,
-        bank_id: formData.bankId || null,
-        recipient_email: formData.recipientEmail || null,
-        account_holder: formData.accountHolder || null,
-        account_number: formData.accountNumber || null,
-        receipt_url: formData.receipt || null,
-        full_name: formData.fullName || null,
-        status: "pending",
-      });
+      const { error } = await supabase
+        .from("transactions")
+        .update({ status: "approved" })
+        .eq("id", transaction.id);
 
       if (error) throw error;
 
-      toast.success("Transaction submitted successfully");
-      onClose();
-    } catch (error) {
+      toast.success("Transaction approved successfully");
+      refetch();
+    } catch (error: any) {
       toast.error(error.message);
-    } finally {
-      setIsLoading(false);
     }
   };
 
+  const handleReject = async (transaction: Transaction) => {
+    try {
+      const { error } = await supabase
+        .from("transactions")
+        .update({ status: "rejected" })
+        .eq("id", transaction.id);
+
+      if (error) throw error;
+
+      toast.success("Transaction rejected successfully");
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleViewReceipt = (url: string) => {
+    window.open(url, '_blank');
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {type === "deposit"
-              ? "Make a Deposit"
-              : type === "withdrawal"
-              ? "Withdraw Funds"
-              : "Send Money"}
-          </DialogTitle>
-        </DialogHeader>
+    <div className="space-y-6">
+      <Card className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold">
+            {type === "deposit" ? "Deposits" : type === "withdrawal" ? "Withdrawals" : "Sends"} Management
+          </h2>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Label>Amount</Label>
-          <Input
-            type="number"
-            value={formData.amount}
-            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-            required
-          />
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {transactions?.map((transaction) => (
+                <TableRow key={transaction.id}>
+                  <TableCell>
+                    {transaction.profiles.first_name} {transaction.profiles.last_name}
+                    <br />
+                    <span className="text-sm text-muted-foreground">
+                      {transaction.profiles.email}
+                    </span>
+                  </TableCell>
+                  <TableCell>${transaction.amount.toFixed(2)}</TableCell>
+                  <TableCell>
+                    {new Date(transaction.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        transaction.status === "approved"
+                          ? "bg-green-100 text-green-800"
+                          : transaction.status === "rejected"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }
+                    >
+                      {transaction.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedTransaction(transaction)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      {transaction.status === "pending" && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handleApprove(transaction)}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleReject(transaction)}
+                          >
+                            Reject
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
 
-          <div className="text-sm text-gray-600">
-            Fee: <span className="font-bold">{calculatedFee.toFixed(2)}</span>
-          </div>
-          <div className="text-sm text-gray-600">
-            Total with fees: <span className="font-bold">{totalWithFees.toFixed(2)}</span>
-          </div>
+      {/* Transaction Details Modal */}
+      <Dialog
+        open={!!selectedTransaction}
+        onOpenChange={() => setSelectedTransaction(null)}
+      >
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Transaction Details</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[80vh]">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground">Type</h4>
+                  <p className="mt-1 capitalize">{selectedTransaction?.type}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground">Amount</h4>
+                  <p className="mt-1">${selectedTransaction?.amount.toFixed(2)}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground">Status</h4>
+                  <p className="mt-1 capitalize">{selectedTransaction?.status}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground">Date</h4>
+                  <p className="mt-1">
+                    {selectedTransaction?.created_at &&
+                      new Date(selectedTransaction.created_at).toLocaleString()}
+                  </p>
+                </div>
+              </div>
 
-          {type === "deposit" && (
-            <>
-              <Label>Upload Receipt</Label>
-              <Input
-                type="file"
-                onChange={(e) => setFormData({ ...formData, receipt: e.target.files[0] })}
-                required
-              />
-            </>
-          )}
+              <div>
+                <h4 className="font-medium text-sm text-muted-foreground">User</h4>
+                <p className="mt-1">
+                  {selectedTransaction?.profiles.first_name}{" "}
+                  {selectedTransaction?.profiles.last_name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedTransaction?.profiles.email}
+                </p>
+              </div>
 
-          {type === "withdrawal" && (
-            <>
-              <Label>Account Holder's Name</Label>
-              <Input
-                type="text"
-                value={formData.accountHolder}
-                onChange={(e) => setFormData({ ...formData, accountHolder: e.target.value })}
-                required
-              />
-              <Label>Account Number</Label>
-              <Input
-                type="text"
-                value={formData.accountNumber}
-                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                required
-              />
-            </>
-          )}
+              {selectedTransaction?.type === "withdrawal" && selectedTransaction?.banks && (
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground">Bank</h4>
+                  <p className="mt-1">{selectedTransaction.banks.name}</p>
+                </div>
+              )}
 
-          {type === "send" && (
-            <>
-              <Label>Recipient Username/Email</Label>
-              <Input
-                type="text"
-                value={formData.recipientEmail}
-                onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })}
-                required
-              />
-            </>
-          )}
+              {selectedTransaction?.type === "send" && (
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground">
+                    Recipient Email
+                  </h4>
+                  <p className="mt-1">{selectedTransaction.recipient_email}</p>
+                </div>
+              )}
 
-          <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading ? "Processing..." : "Submit"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+              {selectedTransaction?.type === "deposit" && (
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground">
+                    Depositor Name
+                  </h4>
+                  <p className="mt-1">{selectedTransaction.full_name}</p>
+                </div>
+              )}
+
+              {selectedTransaction?.receipt_url && (
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground mb-2">
+                    Receipt
+                  </h4>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleViewReceipt(selectedTransaction.receipt_url!)}
+                    className="gap-2"
+                  >
+                    <Eye className="w-4 h-4" /> View Receipt
+                  </Button>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
-export default TransactionModal;
+export default TransactionManagement;
