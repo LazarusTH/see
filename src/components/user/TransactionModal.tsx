@@ -93,7 +93,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
 
   // Loop over the periods (daily, weekly, monthly)
   for (const [period, duration] of Object.entries(limitPeriods)) {
-    const limit = userLimits[${period}_limit];
+    const limit = userLimits[`${period}_limit`];
     if (!limit) continue; // Skip if no limit is set for this period
 
     // Calculate the start of the limit period
