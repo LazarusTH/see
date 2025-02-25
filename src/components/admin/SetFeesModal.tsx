@@ -1,51 +1,116 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
+import { Label } from "@/components/ui/label";
 
-const SetFeesModal = ({ user, onClose, refetch }) => {
-  const [fees, setFees] = useState({
-    withdrawal: { fee_type: "percentage", fee_value: 0 },
-    sending: { fee_type: "percentage", fee_value: 0 },
+const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "sending", deposit: "deposit" };
+
+const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
+  const [formData, setFormData] = useState({
+    amount: "",
+    bankId: "",
+    accountNumber: "",
+    accountHolder: "",
+    recipientEmail: "",
+    receipt: null,
+    fullName: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [fees, setFees] = useState({ fee_type: "percentage", fee_value: 0 });
+  const [calculatedFee, setCalculatedFee] = useState(0);
+  const [totalWithFees, setTotalWithFees] = useState(0);
 
-  const handleSubmit = async () => {
+  // Get authenticated user
+  const { data: userData } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return data.user;
+    },
+    enabled: isOpen,
+  });
+
+  // Fetch fees set by admin for this user
+  const { data: feeData } = useQuery({
+    queryKey: ["fees", type, userData?.id],
+    queryFn: async () => {
+      if (!userData?.id) return null;
+
+      const { data, error } = await supabase
+        .from("fees")
+        .select("fee_type, fee_value")
+        .eq("user_id", userData.id)
+        .eq("transaction_type", TRANSACTION_TYPES[type])
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: isOpen && !!userData?.id,
+  });
+
+  // Set fees when data is loaded
+  useEffect(() => {
+    if (feeData) {
+      setFees(feeData);
+    }
+  }, [feeData]);
+
+  // Calculate transaction fee dynamically
+  useEffect(() => {
+    const amount = parseFloat(formData.amount);
+    if (!isNaN(amount) && amount > 0) {
+      const fee = fees.fee_type === "percentage" ? (amount * fees.fee_value) / 100 : fees.fee_value;
+      setCalculatedFee(fee);
+      setTotalWithFees(amount + fee);
+    } else {
+      setCalculatedFee(0);
+      setTotalWithFees(0);
+    }
+  }, [formData.amount, fees]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setIsLoading(true);
     try {
-      // Upsert fees for withdrawal and sending
-      const { error: withdrawalError } = await supabase
-        .from("fees")
-        .upsert(
-          {
-            user_id: user.id,
-            transaction_type: "withdrawal",
-            fee_type: fees.withdrawal.fee_type,
-            fee_value: fees.withdrawal.fee_value,
-          },
-          { onConflict: ["user_id", "transaction_type"] }
-        );
+      if (!userData) throw new Error("User not authenticated");
 
-      const { error: sendingError } = await supabase
-        .from("fees")
-        .upsert(
-          {
-            user_id: user.id,
-            transaction_type: "sending",
-            fee_type: fees.sending.fee_type,
-            fee_value: fees.sending.fee_value,
-          },
-          { onConflict: ["user_id", "transaction_type"] }
-        );
+      const amount = parseFloat(formData.amount);
+      if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount");
 
-      if (withdrawalError || sendingError) throw withdrawalError || sendingError;
+      if ((type === "withdrawal" || type === "send") && totalWithFees > currentBalance) {
+        throw new Error("Insufficient balance");
+      }
 
-      toast.success("Fees updated successfully");
-      refetch();
+      // Deduct balance (even in pending state)
+      if (type === "withdrawal" || type === "send") {
+        await supabase.rpc("update_balance", { user_id: userData.id, amount: -totalWithFees });
+      }
+
+      // Insert transaction
+      await supabase.from("transactions").insert({
+        user_id: userData.id,
+        type,
+        amount,
+        fee: calculatedFee,
+        total_amount: totalWithFees,
+        bank_id: formData.bankId || null,
+        recipient_email: formData.recipientEmail || null,
+        account_holder: formData.accountHolder || null,
+        account_number: formData.accountNumber || null,
+        receipt_url: formData.receipt || null,
+        full_name: formData.fullName || null,
+        status: "pending",
+      });
+
+      toast.success("Transaction submitted successfully");
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       toast.error(error.message);
     } finally {
       setIsLoading(false);
@@ -53,77 +118,54 @@ const SetFeesModal = ({ user, onClose, refetch }) => {
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Set Fees for {user.username}</DialogTitle>
+          <DialogTitle>
+            {type === "deposit" ? "Make a Deposit" : type === "withdrawal" ? "Withdraw Funds" : "Send Money"}
+          </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <h3 className="font-bold">Withdrawal Fees</h3>
-            <div className="space-y-2">
-              <label>Fee Type</label>
-              <select
-                value={fees.withdrawal.fee_type}
-                onChange={(e) =>
-                  setFees((prev) => ({
-                    ...prev,
-                    withdrawal: { ...prev.withdrawal, fee_type: e.target.value },
-                  }))
-                }
-              >
-                <option value="percentage">Percentage</option>
-                <option value="fixed">Fixed Amount</option>
-              </select>
-              <label>Fee Value</label>
-              <Input
-                type="number"
-                value={fees.withdrawal.fee_value}
-                onChange={(e) =>
-                  setFees((prev) => ({
-                    ...prev,
-                    withdrawal: { ...prev.withdrawal, fee_value: parseFloat(e.target.value) },
-                  }))
-                }
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Label>Amount</Label>
+          <Input type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} required />
+
+          <div className="text-sm text-gray-600">
+            Fee: <span className="font-bold">{calculatedFee.toFixed(2)}</span>
           </div>
-          <div>
-            <h3 className="font-bold">Sending Fees</h3>
-            <div className="space-y-2">
-              <label>Fee Type</label>
-              <select
-                value={fees.sending.fee_type}
-                onChange={(e) =>
-                  setFees((prev) => ({
-                    ...prev,
-                    sending: { ...prev.sending, fee_type: e.target.value },
-                  }))
-                }
-              >
-                <option value="percentage">Percentage</option>
-                <option value="fixed">Fixed Amount</option>
-              </select>
-              <label>Fee Value</label>
-              <Input
-                type="number"
-                value={fees.sending.fee_value}
-                onChange={(e) =>
-                  setFees((prev) => ({
-                    ...prev,
-                    sending: { ...prev.sending, fee_value: parseFloat(e.target.value) },
-                  }))
-                }
-              />
-            </div>
+          <div className="text-sm text-gray-600">
+            Total with fees: <span className="font-bold">{totalWithFees.toFixed(2)}</span>
           </div>
-          <Button onClick={handleSubmit} disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Fees"}
+
+          {type === "deposit" && (
+            <>
+              <Label>Upload Receipt</Label>
+              <Input type="file" onChange={(e) => setFormData({ ...formData, receipt: e.target.files[0] })} required />
+            </>
+          )}
+
+          {type === "withdrawal" && (
+            <>
+              <Label>Account Holder's Name</Label>
+              <Input type="text" value={formData.accountHolder} onChange={(e) => setFormData({ ...formData, accountHolder: e.target.value })} required />
+              <Label>Account Number</Label>
+              <Input type="text" value={formData.accountNumber} onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })} required />
+            </>
+          )}
+
+          {type === "send" && (
+            <>
+              <Label>Recipient Username/Email</Label>
+              <Input type="text" value={formData.recipientEmail} onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })} required />
+            </>
+          )}
+
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? "Processing..." : "Submit"}
           </Button>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default SetFeesModal;
+export default TransactionModal;
