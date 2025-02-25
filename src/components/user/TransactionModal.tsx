@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "sending", deposit: "deposit" };
 
@@ -42,15 +41,27 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     enabled: isOpen && !!TRANSACTION_TYPES[type],
   });
 
+  // Ensure fee is recalculated when amount or fee value changes
+  useEffect(() => {
+    if (formData.amount) {
+      const amount = parseFloat(formData.amount);
+      const fee = calculateFee(amount);
+      setTotalAmount(amount + fee);
+    }
+  }, [formData.amount, fees.fee_value]);
+
   const calculateFee = (amount) => {
-    return fees.fee_type === "percentage" ? (amount * fees.fee_value) / 100 : fees.fee_value;
+    if (fees.fee_type === "percentage" && fees.fee_value > 0) {
+      return (amount * fees.fee_value) / 100;
+    } else if (fees.fee_value > 0) {
+      return fees.fee_value;
+    }
+    return 0;
   };
 
   const handleAmountChange = (e) => {
     const amount = e.target.value;
     setFormData({ ...formData, amount });
-    const fee = calculateFee(amount);
-    setTotalAmount(parseFloat(amount) + fee);
   };
 
   const handleSubmit = async (e) => {
