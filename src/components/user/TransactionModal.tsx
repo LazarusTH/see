@@ -99,9 +99,11 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance, onBalanceUpda
       // Deduct balance for withdrawal and send transactions
       if (type === "withdrawal" || type === "send") {
         const { error: balanceError } = await supabase.rpc("update_user_balance", {
-          user_id: user.id,
-          amount: -totalAmount,
-        });
+  p_amount: -totalAmount, 
+  p_transaction_type: type, 
+  p_user_id: user.id
+});
+
         if (balanceError) throw balanceError;
         onBalanceUpdate(currentBalance - totalAmount);
       }
