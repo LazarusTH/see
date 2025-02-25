@@ -32,14 +32,14 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const { data: limitsData, error: limitsError } = await supabase
         .from("user_limits")
         .select("daily_limit, weekly_limit, monthly_limit, limit_created_at")
-        .eq("user_id", user.id)  // Changed profile_id to user_id
+        .eq("user_id", user.id)
         .eq("transaction_type", transactionType)
         .single();
 
       const { data: feesData, error: feesError } = await supabase
         .from("fees")
         .select("fee_type, fee_value")
-        .eq("user_id", user.id)  // Changed profile_id to user_id
+        .eq("user_id", user.id)
         .eq("transaction_type", transactionType)
         .single();
 
@@ -60,7 +60,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const { data, error } = await supabase
         .from("user_banks")
         .select("bank_id, banks(name)")
-        .eq("user_id", user.id);  // Changed profile_id to user_id
+        .eq("user_id", user.id);
 
       if (error) throw error;
 
@@ -80,48 +80,41 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     }
   };
 
- const checkLimits = async (amount) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !userLimits) return;
+  const checkLimits = async (amount) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !userLimits) return;
 
-  // Define limit periods in milliseconds
-  const limitPeriods = {
-    daily: 24 * 60 * 60 * 1000, // 24 hours
-    weekly: 7 * 24 * 60 * 60 * 1000, // 7 days
-    monthly: 30 * 24 * 60 * 60 * 1000, // 30 days
-  };
+    const limitPeriods = {
+      daily: 24 * 60 * 60 * 1000,
+      weekly: 7 * 24 * 60 * 60 * 1000,
+      monthly: 30 * 24 * 60 * 60 * 1000,
+    };
 
-  // Loop over the periods (daily, weekly, monthly)
-  for (const [period, duration] of Object.entries(limitPeriods)) {
-    const limit = userLimits[`${period}_limit`];
-    if (!limit) continue; // Skip if no limit is set for this period
+    for (const [period, duration] of Object.entries(limitPeriods)) {
+      const limit = userLimits[`${period}_limit`];
+      if (!limit) continue;
 
-    // Calculate the start of the limit period
-    const limitStart = new Date(userLimits.limit_created_at);
-    const limitEnd = new Date(limitStart.getTime() + duration);
+      const limitStart = new Date(userLimits.limit_created_at);
+      const limitEnd = new Date(limitStart.getTime() + duration);
 
-    // Fetch transactions within the limit period
-    const { data, error } = await supabase
-      .from("transactions")
-      .select("amount, created_at")
-      .eq("user_id", user.id)
-      .eq("type", type)
-      .eq("status", "approved")
-      .gte("created_at", limitStart.toISOString()) // From limit start date
-      .lte("created_at", limitEnd.toISOString()); // To limit end date
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("amount, created_at")
+        .eq("user_id", user.id)
+        .eq("type", type)
+        .eq("status", "approved")
+        .gte("created_at", limitStart.toISOString())
+        .lte("created_at", limitEnd.toISOString());
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // Sum the transaction amounts
-    const totalSpent = data.reduce((sum, tx) => sum + tx.amount, 0);
+      const totalSpent = data.reduce((sum, tx) => sum + tx.amount, 0);
 
-    // Check if the new transaction would exceed the limit
-    if (totalSpent + amount > limit) {
-      throw new Error(`Exceeds ${period} limit of ${limit}`);
+      if (totalSpent + amount > limit) {
+        throw new Error(`Exceeds ${period} limit of ${limit}`);
+      }
     }
-  }
-};
-
+  };
 
   const updateBalance = async (userId, amount, action) => {
     const { data, error } = await supabase
@@ -137,6 +130,28 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       newBalance -= amount;
     } else if (action === "add") {
       newBalance += amount;
+    }
+
+    const { updateError } = await supabase
+      .from("profiles")
+      .update({ balance: newBalance })
+      .eq("id", userId);
+
+    if (updateError) throw new Error("Unable to update user balance");
+  };
+
+  const refundBalance = async (userId, amount, fee, action) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("balance")
+      .eq("id", userId)
+      .single();
+
+    if (error) throw new Error("Unable to fetch user balance");
+
+    let newBalance = data.balance;
+    if (action === "deduct") {
+      newBalance += (amount + fee); // Refund both the amount and the fee
     }
 
     const { updateError } = await supabase
@@ -181,7 +196,6 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const { error } = await supabase.from("transactions").insert(transactionData);
       if (error) throw error;
 
-      // Deduct or Add balance based on transaction type
       if (type === "deposit") {
         await updateBalance(user.id, amount, "add");
       } else if (type === "withdrawal" || type === "send") {
@@ -201,6 +215,24 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       toast.error(error.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRejectTransaction = async (transactionId, userId, amount, fee, transactionType) => {
+    try {
+      const { error } = await supabase
+        .from("transactions")
+        .update({ status: "rejected" })
+        .eq("id", transactionId);
+
+      if (error) throw new Error("Unable to update transaction status to rejected");
+
+      if (transactionType === "withdrawal" || transactionType === "send") {
+        await refundBalance(userId, amount, fee, "deduct");
+        toast.success("Transaction rejected and balance refunded.");
+      }
+    } catch (error) {
+      toast.error(error.message);
     }
   };
 
@@ -231,29 +263,19 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 required
               />
-              <Label>Upload Receipt</Label>
-              <Input
-                type="file"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    setFormData({ ...formData, receipt: file });
-                  }
-                }}
-                required
-              />
             </>
           )}
 
           {type === "withdrawal" && (
             <>
-              <Label>Select Bank</Label>
+              <Label>Bank</Label>
               <Select
                 value={formData.bankId}
                 onValueChange={(value) => setFormData({ ...formData, bankId: value })}
+                required
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a bank" />
+                  <SelectValue placeholder="Select bank" />
                 </SelectTrigger>
                 <SelectContent>
                   {userBanks.map((bank) => (
@@ -266,22 +288,31 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
             </>
           )}
 
-          <div className="space-y-2">
-            <Label>Fee</Label>
-            <div className="text-sm text-gray-600">
-              {fees.fee_type === "percentage" ? `${fees.fee_value}%` : `$${fees.fee_value}`}
-            </div>
-            <div className="text-sm text-gray-600">Fee Amount: ${fee.toFixed(2)}</div>
+          {type === "send" && (
+            <>
+              <Label>Recipient Email</Label>
+              <Input
+                type="email"
+                value={formData.recipientEmail}
+                onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })}
+                required
+              />
+            </>
+          )}
+
+          <div>
+            <Label>Total Amount (Including Fee):</Label>
+            <div>{totalAmount}</div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Total Amount</Label>
-            <div className="text-sm text-gray-600">${totalAmount.toFixed(2)}</div>
+          <div className="flex justify-between items-center">
+            <Button type="submit" isLoading={isLoading}>
+              Submit
+            </Button>
+            <Button type="button" onClick={onClose}>
+              Close
+            </Button>
           </div>
-
-          <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading ? "Processing..." : "Submit"}
-          </Button>
         </form>
       </DialogContent>
     </Dialog>
