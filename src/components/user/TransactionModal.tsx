@@ -22,7 +22,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [fees, setFees] = useState({ fee_type: "percentage", fee_value: 0 });
-  
+
   const { data: userLimits } = useQuery({
     queryKey: ["userLimits", type],
     queryFn: async () => {
@@ -61,6 +61,28 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       if ((type === "withdrawal" || type === "send") && totalAmount > currentBalance) {
         throw new Error("Insufficient balance");
       }
+      
+      // Check transaction limits
+      const { daily_limit, weekly_limit, monthly_limit } = userLimits || {};
+      const { data: transactions } = await supabase
+        .from("transactions")
+        .select("amount, created_at")
+        .eq("user_id", user.id)
+        .eq("type", type);
+      
+      const now = new Date();
+      const dailyTotal = transactions.filter(t => new Date(t.created_at) > new Date(now.setHours(0,0,0,0)))
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      const weeklyTotal = transactions.filter(t => new Date(t.created_at) > new Date(now.setDate(now.getDate() - 7)))
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      const monthlyTotal = transactions.filter(t => new Date(t.created_at) > new Date(now.setMonth(now.getMonth() - 1)))
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      if (daily_limit && dailyTotal + amount > daily_limit) throw new Error("Daily limit exceeded");
+      if (weekly_limit && weeklyTotal + amount > weekly_limit) throw new Error("Weekly limit exceeded");
+      if (monthly_limit && monthlyTotal + amount > monthly_limit) throw new Error("Monthly limit exceeded");
       
       // Update profile balance
       if (type === "deposit") {
