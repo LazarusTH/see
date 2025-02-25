@@ -41,6 +41,16 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
     },
   });
 
+const { publicURL, error } = supabase
+  .storage
+  .from('id_cards')
+  .getPublicUrl(user.id_card_url);
+
+if (error) {
+  console.error("Error fetching image:", error.message);
+}
+
+
   const { data: userBanks } = useQuery({
     queryKey: ["userBanks", user.id],
     queryFn: async () => {
@@ -110,11 +120,13 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
   <Card className="p-6">
     <h3 className="text-lg font-semibold mb-4">ID Card</h3>
     <div className="flex justify-center">
-      <img
-        src={user.id_card_url}
-        alt="ID Card"
-        className="w-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl h-auto rounded-lg shadow-md"
-      />
+     <img
+  src={publicURL}
+  alt="ID Card"
+  className="max-w-full w-auto h-auto rounded-lg shadow-md"
+  style={{ maxHeight: '500px' }}
+/>
+
     </div>
   </Card>
 )}
