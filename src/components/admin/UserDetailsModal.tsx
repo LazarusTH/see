@@ -43,7 +43,7 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
 
 const { publicURL, error } = supabase
   .storage
-  .from('id_cards')
+  .from('id-cards')
   .getPublicUrl(user.id_card_url);
 
 if (error) {
