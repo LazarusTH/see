@@ -104,30 +104,10 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
           fees: feesData,
           transactions: transactionsData,
         });
-
-        const handleViewIdCard = async () => {
-    if (!user.id_card_url) {
-      toast.error("No ID Card available");
-      return;
-    }
-
-    try {
-      // Get the public URL for the ID card
-      const { data: publicUrlData } = supabase.storage
-        .from("id-cards")
-        .getPublicUrl(user.id_card_url);
-
-      if (!publicUrlData?.publicUrl) {
-        throw new Error("Could not get ID card URL");
+      } catch (error) {
+        toast.error("Failed to load user details");
       }
-
-      // Open the ID card image directly in the modal (not a new tab)
-      const imgElement = document.getElementById("id-card-img") as HTMLImageElement;
-      imgElement.src = publicUrlData.publicUrl;
-    } catch (error) {
-      toast.error("Failed to view ID card");
-    }
-  };
+    };
 
     fetchUserDetails();
   }, [user]);
