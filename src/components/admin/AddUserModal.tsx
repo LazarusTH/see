@@ -52,8 +52,8 @@ const AddUserModal = ({ onClose, refetch }: AddUserModalProps) => {
       let idCardUrl = null;
       if (formData.idCard) {
         const fileExt = formData.idCard.name.split(".").pop();
-        const fileName = ${authData.user.id}-${Date.now()}.${fileExt};
-        
+        const fileName = `${authData.user.id}-${Date.now()}.${fileExt}`;
+
         const { error: uploadError } = await supabase.storage
           .from("id-cards")
           .upload(fileName, formData.idCard);
