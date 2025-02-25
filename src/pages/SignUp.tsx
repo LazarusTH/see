@@ -67,7 +67,7 @@ const SignUp = () => {
       let idCardUrl = null;
       if (formData.idCard) {
         const fileExt = formData.idCard.name.split(".").pop();
-        const fileName = `${authData.user.id}-${Math.random()}.${fileExt}`;
+        const fileName = ${authData.user.id}-${Math.random()}.${fileExt};
 
         const { error: uploadError } = await supabase.storage
           .from("id-cards")
@@ -82,7 +82,7 @@ const SignUp = () => {
         idCardUrl = publicUrlData.publicUrl;
       }
 
-      // 3. Insert user profile into the `profiles` table
+      // 3. Insert user profile into the profiles table
       const { error: profileError } = await supabase
         .from("profiles")
         .insert({
@@ -103,7 +103,7 @@ const SignUp = () => {
 
       if (profileError) throw profileError;
 
-      // 4. Insert user role into `user_roles` table
+      // 4. Insert user role into user_roles table
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({
