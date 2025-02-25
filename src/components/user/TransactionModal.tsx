@@ -13,12 +13,10 @@ const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "sending", deposit: 
 const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
   const [formData, setFormData] = useState({
     amount: "",
-    bankId: "", // Store the selected bank ID
+    bankId: "",
     recipientEmail: "",
     receipt: null,
-    fullName: "", // For deposit requests
-    accountNumber: "", // For withdrawal
-    accountHolderName: "", // For withdrawal
+    fullName: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [fees, setFees] = useState({ fee_type: "percentage", fee_value: 0 });
@@ -34,14 +32,14 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const { data: limitsData, error: limitsError } = await supabase
         .from("user_limits")
         .select("daily_limit, weekly_limit, monthly_limit, limit_created_at")
-        .eq("profile_id", user.id)
+        .eq("user_id", user.id)  // Changed profile_id to user_id
         .eq("transaction_type", transactionType)
         .single();
 
       const { data: feesData, error: feesError } = await supabase
         .from("fees")
         .select("fee_type, fee_value")
-        .eq("profile_id", user.id)
+        .eq("user_id", user.id)  // Changed profile_id to user_id
         .eq("transaction_type", transactionType)
         .single();
 
@@ -50,21 +48,19 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       setFees(feesData || { fee_type: "percentage", fee_value: 0 });
       return limitsData;
     },
-    enabled: isOpen && !!TRANSACTION_TYPES[type], // Ensure this is a boolean
+    enabled: isOpen && !!TRANSACTION_TYPES[type],
   });
 
-  // Fetch assigned bank names for the user
   const { data: userBanks = [] } = useQuery({
     queryKey: ["userBanks"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Join user_banks with banks to get bank names
       const { data, error } = await supabase
         .from("user_banks")
         .select("bank_id, banks(name)")
-        .eq("profile_id", user.id);
+        .eq("user_id", user.id);  // Changed profile_id to user_id
 
       if (error) throw error;
 
@@ -73,7 +69,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         bank_name: item.banks.name,
       }));
     },
-    enabled: isOpen && type === "withdrawal", // Fetch only for withdrawal requests
+    enabled: isOpen && type === "withdrawal",
   });
 
   const calculateFee = (amount) => {
@@ -81,6 +77,42 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       return (amount * fees.fee_value) / 100;
     } else {
       return fees.fee_value;
+    }
+  };
+
+  const checkLimits = async (amount) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !userLimits) return;
+
+    const limitPeriods = {
+      daily: 24 * 60 * 60 * 1000,
+      weekly: 7 * 24 * 60 * 60 * 1000,
+      monthly: 30 * 24 * 60 * 60 * 1000,
+    };
+
+    for (const [period, duration] of Object.entries(limitPeriods)) {
+      const limit = userLimits[`${period}_limit`];
+      if (!limit) continue;
+
+      const limitStart = new Date(userLimits.limit_created_at);
+      const limitEnd = new Date(limitStart.getTime() + duration);
+
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("amount, created_at")
+        .eq("user_id", user.id)  // Changed profile_id to user_id
+        .eq("type", type)
+        .eq("status", "completed")
+        .gte("created_at", limitStart.toISOString())
+        .lte("created_at", limitEnd.toISOString());
+
+      if (error) throw error;
+
+      const totalSpent = data.reduce((sum, tx) => sum + tx.amount, 0);
+
+      if (totalSpent + amount > limit) {
+        throw new Error(`Exceeds ${period} limit of ${limit}`);
+      }
     }
   };
 
@@ -97,22 +129,22 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         throw new Error("Insufficient balance");
       }
 
+      if (TRANSACTION_TYPES[type]) await checkLimits(amount);
+
       const fee = calculateFee(amount);
       const totalAmount = amount + fee;
 
-      // Prepare transaction data
       const transactionData = {
-        profile_id: user.id,
+        user_id: user.id,
         type,
         amount,
         fee,
         total_amount: totalAmount,
-        bank_id: formData.bankId || null, // Include the selected bank ID for withdrawal
-        recipient_email: formData.recipientEmail || null, // For send money
-        receipt_url: formData.receipt || null, // For deposit
-        account_number: formData.accountNumber || null, // For withdrawal
-        account_holder_name: formData.accountHolderName || null, // For withdrawal
-        status: "pending", // Initially set status to pending
+        bank_id: formData.bankId || null,
+        recipient_email: formData.recipientEmail || null,
+        receipt_url: formData.receipt || null,
+        full_name: formData.fullName || null,
+        status: "pending",
       };
 
       const { error } = await supabase.from("transactions").insert(transactionData);
@@ -126,8 +158,6 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         recipientEmail: "",
         receipt: null,
         fullName: "",
-        accountNumber: "",
-        accountHolderName: "",
       });
     } catch (error) {
       toast.error(error.message);
@@ -146,7 +176,6 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
           <DialogTitle>{type === "deposit" ? "Make a Deposit" : type === "withdrawal" ? "Withdraw Funds" : "Send Money"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Common Fields */}
           <Label>Amount</Label>
           <Input
             type="number"
@@ -155,7 +184,6 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
             required
           />
 
-          {/* Deposit-Specific Fields */}
           {type === "deposit" && (
             <>
               <Label>Full Name</Label>
@@ -179,7 +207,6 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
             </>
           )}
 
-          {/* Withdrawal-Specific Fields */}
           {type === "withdrawal" && (
             <>
               <Label>Select Bank</Label>
@@ -198,37 +225,9 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
                   ))}
                 </SelectContent>
               </Select>
-              <Label>Account Holder's Name</Label>
-              <Input
-                type="text"
-                value={formData.accountHolderName}
-                onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
-                required
-              />
-              <Label>Account Number</Label>
-              <Input
-                type="text"
-                value={formData.accountNumber}
-                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                required
-              />
             </>
           )}
 
-          {/* Send Money Specific Fields */}
-          {type === "send" && (
-            <>
-              <Label>Recipient Email</Label>
-              <Input
-                type="email"
-                value={formData.recipientEmail}
-                onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })}
-                required
-              />
-            </>
-          )}
-
-          {/* Fee and Total Amount Display */}
           <div className="space-y-2">
             <Label>Fee</Label>
             <div className="text-sm text-gray-600">
@@ -236,12 +235,12 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
             </div>
             <div className="text-sm text-gray-600">Fee Amount: ${fee.toFixed(2)}</div>
           </div>
+
           <div className="space-y-2">
             <Label>Total Amount</Label>
             <div className="text-sm text-gray-600">${totalAmount.toFixed(2)}</div>
           </div>
 
-          {/* Submit Button */}
           <Button type="submit" disabled={isLoading} className="w-full">
             {isLoading ? "Processing..." : "Submit"}
           </Button>
