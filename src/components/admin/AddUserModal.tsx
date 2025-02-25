@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -27,42 +27,10 @@ const AddUserModal = ({ onClose, refetch }: AddUserModalProps) => {
     idCard: null as File | null,
   });
 
-  const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFormData((prev) => ({ ...prev, idCard: e.target.files[0] }));
+    if (e.target.files && e.target.files[0]) {
+      setFormData({ ...formData, idCard: e.target.files[0] });
     }
-  };
-
-  const handleAuthSignUp = async () => {
-    const { data, error } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-    });
-    if (error || !data.user) throw new Error(error?.message || "Failed to create user");
-    return data.user;
-  };
-
-  const handleFileUpload = async (userId: string) => {
-    if (formData.idCard) {
-      const fileExt = formData.idCard.name.split(".").pop();
-      const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from("id-cards")
-        .upload(fileName, formData.idCard);
-
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrlData } = supabase.storage
-        .from("id-cards")
-        .getPublicUrl(fileName);
-
-      return publicUrlData.publicUrl;
-    }
-    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,14 +38,40 @@ const AddUserModal = ({ onClose, refetch }: AddUserModalProps) => {
     setIsLoading(true);
 
     try {
-      const user = await handleAuthSignUp();
-      const idCardUrl = await handleFileUpload(user.id);
+      // Step 1: Create user in auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+      });
 
+      if (authError || !authData.user) {
+        throw authError || new Error("Failed to create user");
+      }
+
+      // Step 2: Handle ID card upload if provided
+      let idCardUrl = null;
+      if (formData.idCard) {
+        const fileExt = formData.idCard.name.split(".").pop();
+        const fileName = ${authData.user.id}-${Date.now()}.${fileExt};
+        
+        const { error: uploadError } = await supabase.storage
+          .from("id-cards")
+          .upload(fileName, formData.idCard);
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from("id-cards")
+          .getPublicUrl(fileName);
+        idCardUrl = publicUrlData.publicUrl;
+      }
+
+      // Step 3: Create user profile
       const { error: profileError } = await supabase
         .from("profiles")
         .insert([
           {
-            id: user.id,
+            id: authData.user.id,
             first_name: formData.firstName,
             last_name: formData.lastName,
             username: formData.username,
@@ -90,11 +84,19 @@ const AddUserModal = ({ onClose, refetch }: AddUserModalProps) => {
             balance: 0,
           },
         ]);
+
       if (profileError) throw profileError;
 
+      // Step 4: Create user role
       const { error: roleError } = await supabase
         .from("user_roles")
-        .insert([{ user_id: user.id, role: formData.role }]);
+        .insert([
+          {
+            user_id: authData.user.id,
+            role: formData.role,
+          },
+        ]);
+
       if (roleError) throw roleError;
 
       toast.success("User created successfully");
@@ -113,24 +115,37 @@ const AddUserModal = ({ onClose, refetch }: AddUserModalProps) => {
         <h2 className="text-xl font-semibold mb-4">Add New User</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {["firstName", "lastName"].map((field) => (
-              <div key={field}>
-                <Label htmlFor={field}>{`${field.charAt(0).toUpperCase() + field.slice(1)} Name`}</Label>
-                <Input
-                  id={field}
-                  value={formData[field as keyof typeof formData]}
-                  onChange={(e) => handleChange(field, e.target.value)}
-                  required
-                />
-              </div>
-            ))}
+            <div>
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) =>
+                  setFormData({ ...formData, firstName: e.target.value })
+                }
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) =>
+                  setFormData({ ...formData, lastName: e.target.value })
+                }
+                required
+              />
+            </div>
           </div>
           <div>
             <Label htmlFor="username">Username</Label>
             <Input
               id="username"
               value={formData.username}
-              onChange={(e) => handleChange("username", e.target.value)}
+              onChange={(e) =>
+                setFormData({ ...formData, username: e.target.value })
+              }
               required
             />
           </div>
@@ -140,7 +155,9 @@ const AddUserModal = ({ onClose, refetch }: AddUserModalProps) => {
               id="email"
               type="email"
               value={formData.email}
-              onChange={(e) => handleChange("email", e.target.value)}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               required
             />
           </div>
@@ -150,7 +167,9 @@ const AddUserModal = ({ onClose, refetch }: AddUserModalProps) => {
               id="password"
               type="password"
               value={formData.password}
-              onChange={(e) => handleChange("password", e.target.value)}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
               required
             />
           </div>
@@ -159,7 +178,9 @@ const AddUserModal = ({ onClose, refetch }: AddUserModalProps) => {
             <select
               id="role"
               value={formData.role}
-              onChange={(e) => handleChange("role", e.target.value)}
+              onChange={(e) =>
+                setFormData({ ...formData, role: e.target.value })
+              }
               required
               className="w-full border rounded-md p-2"
             >
@@ -168,16 +189,49 @@ const AddUserModal = ({ onClose, refetch }: AddUserModalProps) => {
             </select>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {["dateOfBirth", "placeOfBirth", "residence", "nationality"].map((field) => (
-              <div key={field}>
-                <Label htmlFor={field}>{`${field.charAt(0).toUpperCase() + field.slice(1)}`}</Label>
-                <Input
-                  id={field}
-                  value={formData[field as keyof typeof formData]}
-                  onChange={(e) => handleChange(field, e.target.value)}
-                />
-              </div>
-            ))}
+            <div>
+              <Label htmlFor="dateOfBirth">Date of Birth</Label>
+              <Input
+                id="dateOfBirth"
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={(e) =>
+                  setFormData({ ...formData, dateOfBirth: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="placeOfBirth">Place of Birth</Label>
+              <Input
+                id="placeOfBirth"
+                value={formData.placeOfBirth}
+                onChange={(e) =>
+                  setFormData({ ...formData, placeOfBirth: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="residence">Residence</Label>
+              <Input
+                id="residence"
+                value={formData.residence}
+                onChange={(e) =>
+                  setFormData({ ...formData, residence: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="nationality">Nationality</Label>
+              <Input
+                id="nationality"
+                value={formData.nationality}
+                onChange={(e) =>
+                  setFormData({ ...formData, nationality: e.target.value })
+                }
+              />
+            </div>
           </div>
           <div>
             <Label htmlFor="idCard">Upload ID Card</Label>
