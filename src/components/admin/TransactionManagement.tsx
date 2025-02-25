@@ -91,6 +91,34 @@ const TransactionManagement = ({ type }: TransactionManagementProps) => {
 
   const handleReject = async (transaction: Transaction) => {
     try {
+      let refundAmount = transaction.amount;
+      
+      // Apply fee and refund balance for "withdrawal" and "send" transactions
+      if (transaction.type === "withdrawal" || transaction.type === "send") {
+        const fee = 0.02; // Example fee rate (2%), adjust as needed
+        refundAmount = transaction.amount * (1 - fee);
+
+        // Fetch the user's balance (assuming email is used to identify the user)
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("balance")
+          .eq("email", transaction.profiles.email) // Adjust if using other field for user identification
+          .single();
+
+        if (profileError) throw profileError;
+
+        const newBalance = profileData.balance + refundAmount;
+
+        // Update user's balance with the refunded amount
+        const { error: balanceError } = await supabase
+          .from("profiles")
+          .update({ balance: newBalance })
+          .eq("email", transaction.profiles.email); // Adjust if using other field for user identification
+
+        if (balanceError) throw balanceError;
+      }
+
+      // Update the transaction status to "rejected"
       const { error } = await supabase
         .from("transactions")
         .update({ status: "rejected" })
@@ -98,7 +126,7 @@ const TransactionManagement = ({ type }: TransactionManagementProps) => {
 
       if (error) throw error;
 
-      toast.success("Transaction rejected successfully");
+      toast.success("Transaction rejected and balance refunded successfully");
       refetch();
     } catch (error: any) {
       toast.error(error.message);
