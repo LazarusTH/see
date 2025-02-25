@@ -13,10 +13,12 @@ const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "sending", deposit: 
 const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
   const [formData, setFormData] = useState({
     amount: "",
-    bankId: "", 
+    bankId: "",
+    accountNumber: "",
+    accountHolder: "",
     recipientEmail: "",
     receipt: null,
-    fullName: "", 
+    fullName: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [fees, setFees] = useState({ fee_type: "percentage", fee_value: 0 });
@@ -26,7 +28,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-
+      
       const transactionType = TRANSACTION_TYPES[type];
       const { data: limitsData, error: limitsError } = await supabase
         .from("user_limits")
@@ -47,7 +49,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       setFees(feesData || { fee_type: "percentage", fee_value: 0 });
       return limitsData;
     },
-    enabled: isOpen && !!TRANSACTION_TYPES[type], 
+    enabled: isOpen && !!TRANSACTION_TYPES[type],
   });
 
   const { data: userBanks = [] } = useQuery({
@@ -68,47 +70,11 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         bank_name: item.banks.name,
       }));
     },
-    enabled: isOpen && type === "withdrawal", 
+    enabled: isOpen && type === "withdrawal",
   });
 
   const calculateFee = (amount) => {
     return fees.fee_type === "percentage" ? (amount * fees.fee_value) / 100 : fees.fee_value;
-  };
-
-  const checkLimits = async (amount) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !userLimits) return;
-
-    const limitPeriods = {
-      daily: 24 * 60 * 60 * 1000,
-      weekly: 7 * 24 * 60 * 60 * 1000,
-      monthly: 30 * 24 * 60 * 60 * 1000,
-    };
-
-    for (const [period, duration] of Object.entries(limitPeriods)) {
-      const limit = userLimits[`${period}_limit`];
-      if (!limit) continue;
-
-      const limitStart = new Date(userLimits.limit_created_at);
-      const limitEnd = new Date(limitStart.getTime() + duration);
-
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("amount, created_at")
-        .eq("user_id", user.id)
-        .eq("type", type)
-        .eq("status", "approved")
-        .gte("created_at", limitStart.toISOString())
-        .lte("created_at", limitEnd.toISOString());
-
-      if (error) throw error;
-
-      const totalSpent = data.reduce((sum, tx) => sum + tx.amount, 0);
-
-      if (totalSpent + amount > limit) {
-        throw new Error(`Exceeds ${period} limit of ${limit}`);
-      }
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -120,14 +86,13 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
 
       const amount = parseFloat(formData.amount);
       if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount");
-      if ((type === "withdrawal" || type === "send") && amount > currentBalance) {
-        throw new Error("Insufficient balance");
-      }
-
-      if (TRANSACTION_TYPES[type]) await checkLimits(amount);
 
       const fee = calculateFee(amount);
       const totalAmount = amount + fee;
+
+      if ((type === "withdrawal" || type === "send") && totalAmount > currentBalance) {
+        throw new Error("Insufficient balance");
+      }
 
       const transactionData = {
         user_id: user.id,
@@ -137,6 +102,8 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         total_amount: totalAmount,
         bank_id: formData.bankId || null,
         recipient_email: formData.recipientEmail || null,
+        account_holder: formData.accountHolder || null,
+        account_number: formData.accountNumber || null,
         receipt_url: formData.receipt || null,
         full_name: formData.fullName || null,
         status: "pending",
@@ -147,7 +114,6 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
 
       toast.success("Transaction submitted successfully");
       onClose();
-      setFormData({ amount: "", bankId: "", recipientEmail: "", receipt: null, fullName: "" });
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -164,6 +130,22 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Label>Amount</Label>
           <Input type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} required />
+          {type === "deposit" && (
+            <>
+              <Label>Full Name</Label>
+              <Input type="text" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} required />
+              <Label>Upload Receipt</Label>
+              <Input type="file" onChange={(e) => setFormData({ ...formData, receipt: e.target.files[0] })} required />
+            </>
+          )}
+          {type === "withdrawal" && (
+            <>
+              <Label>Account Holder's Name</Label>
+              <Input type="text" value={formData.accountHolder} onChange={(e) => setFormData({ ...formData, accountHolder: e.target.value })} required />
+              <Label>Account Number</Label>
+              <Input type="text" value={formData.accountNumber} onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })} required />
+            </>
+          )}
           <Button type="submit" disabled={isLoading} className="w-full">{isLoading ? "Processing..." : "Submit"}</Button>
         </form>
       </DialogContent>
