@@ -58,19 +58,6 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
     },
   });
 
-  // Check if the logged-in user is an admin
-  const checkAdminAccess = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    return userData?.role === 'admin';
-  };
-
-  const [isAdmin, setIsAdmin] = React.useState(false);
-
-  React.useEffect(() => {
-    // Fetch the user role on mount
-    checkAdminAccess().then((adminStatus) => setIsAdmin(adminStatus));
-  }, []);
-
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[800px]">
@@ -118,8 +105,8 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
               </div>
             </Card>
 
-            {/* ID Card (Visible only to admins) */}
-            {isAdmin && user.id_card_url && (
+            {/* ID Card (Display based on URL) */}
+            {user.id_card_url && (
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4">ID Card</h3>
                 <div className="w-full">
