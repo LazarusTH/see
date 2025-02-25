@@ -116,6 +116,30 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     }
   };
 
+  const updateBalance = async (userId, amount, action) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("balance")
+      .eq("id", userId)
+      .single();
+
+    if (error) throw new Error("Unable to fetch user balance");
+
+    let newBalance = data.balance;
+    if (action === "deduct") {
+      newBalance -= amount;
+    } else if (action === "add") {
+      newBalance += amount;
+    }
+
+    const { updateError } = await supabase
+      .from("profiles")
+      .update({ balance: newBalance })
+      .eq("id", userId);
+
+    if (updateError) throw new Error("Unable to update user balance");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -149,6 +173,13 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
 
       const { error } = await supabase.from("transactions").insert(transactionData);
       if (error) throw error;
+
+      // Deduct or Add balance based on transaction type
+      if (type === "deposit") {
+        await updateBalance(user.id, amount, "add");
+      } else if (type === "withdrawal" || type === "send") {
+        await updateBalance(user.id, totalAmount, "deduct");
+      }
 
       toast.success("Transaction submitted successfully");
       onClose();
