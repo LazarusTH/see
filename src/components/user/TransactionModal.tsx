@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "sending", deposit: "deposit" };
+const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "send", deposit: "deposit" };
 
 const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
   const [formData, setFormData] = useState({
@@ -116,7 +116,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     }
   };
 
-  const updateBalance = async (userId, amount, action) => {
+  const updateBalance = async (userId, amount) => {
     const { data, error } = await supabase
       .from("profiles")
       .select("balance")
@@ -125,34 +125,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
 
     if (error) throw new Error("Unable to fetch user balance");
 
-    let newBalance = data.balance;
-    if (action === "deduct") {
-      newBalance -= amount;
-    } else if (action === "add") {
-      newBalance += amount;
-    }
-
-    const { updateError } = await supabase
-      .from("profiles")
-      .update({ balance: newBalance })
-      .eq("id", userId);
-
-    if (updateError) throw new Error("Unable to update user balance");
-  };
-
-  const refundBalance = async (userId, amount, fee, action) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("balance")
-      .eq("id", userId)
-      .single();
-
-    if (error) throw new Error("Unable to fetch user balance");
-
-    let newBalance = data.balance;
-    if (action === "deduct") {
-      newBalance += (amount + fee); // Refund both the amount and the fee
-    }
+    const newBalance = data.balance + amount;
 
     const { updateError } = await supabase
       .from("profiles")
@@ -193,13 +166,16 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         status: "pending",
       };
 
-      const { error } = await supabase.from("transactions").insert(transactionData);
+      const { data: transaction, error } = await supabase
+        .from("transactions")
+        .insert(transactionData)
+        .select()
+        .single();
+
       if (error) throw error;
 
-      if (type === "deposit") {
-        await updateBalance(user.id, amount, "add");
-      } else if (type === "withdrawal" || type === "send") {
-        await updateBalance(user.id, totalAmount, "deduct");
+      if (type === "withdrawal" || type === "send") {
+        await updateBalance(user.id, -totalAmount); // Deduct the total amount (amount + fee)
       }
 
       toast.success("Transaction submitted successfully");
@@ -218,7 +194,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     }
   };
 
-  const handleRejectTransaction = async (transactionId, userId, amount, fee, transactionType) => {
+  const handleRejectTransaction = async (transactionId, userId, amount, fee) => {
     try {
       const { error } = await supabase
         .from("transactions")
@@ -227,10 +203,8 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
 
       if (error) throw new Error("Unable to update transaction status to rejected");
 
-      if (transactionType === "withdrawal" || transactionType === "send") {
-        await refundBalance(userId, amount, fee, "deduct");
-        toast.success("Transaction rejected and balance refunded.");
-      }
+      await updateBalance(userId, amount + fee); // Refund the amount and fee
+      toast.success("Transaction rejected and balance refunded.");
     } catch (error) {
       toast.error(error.message);
     }
