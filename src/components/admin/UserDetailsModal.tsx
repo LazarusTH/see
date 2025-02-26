@@ -41,27 +41,17 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
     },
   });
 
-const { publicURL, error } = supabase
-  .storage
-  .from('id-cards')
-  .getPublicUrl(user.id_card_url);
-
-if (error) {
-  console.error("Error fetching image:", error.message);
-}
-
-
   const { data: userBanks } = useQuery({
     queryKey: ["userBanks", user.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_banks")
-        .select(
+        .select(`
           *,
           banks (
             name
           )
-        )
+        `)
         .eq("user_id", user.id);
       if (error) throw error;
       return data;
@@ -115,22 +105,19 @@ if (error) {
               </div>
             </Card>
 
-           {/* ID Card (Direct Display) */}
-{user.id_card_url && (
-  <Card className="p-6">
-    <h3 className="text-lg font-semibold mb-4">ID Card</h3>
-    <div className="flex justify-center">
-     <img
-  src={publicURL}
-  alt="ID Card"
-  className="max-w-full w-auto h-auto rounded-lg shadow-md"
-  style={{ maxHeight: '500px' }}
-/>
-
-    </div>
-  </Card>
-)}
-
+            {/* ID Card */}
+            {user.id_card_url && (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">ID Card</h3>
+                <div className="w-full">
+                  <img
+                    src={user.id_card_url}
+                    alt="ID Card"
+                    className="max-w-full h-auto rounded-lg"
+                  />
+                </div>
+              </Card>
+            )}
 
             {/* Transaction Limits */}
             <Card className="p-6">
@@ -168,7 +155,7 @@ if (error) {
                     <div className="mt-2">
                       <p className="text-sm text-muted-foreground">Type: {fee.fee_type}</p>
                       <p className="font-medium">
-                        {fee.fee_type === 'percentage' ? ${fee.fee_value}% : $${fee.fee_value}}
+                        {fee.fee_type === 'percentage' ? `${fee.fee_value}%` : `$${fee.fee_value}`}
                       </p>
                     </div>
                   </div>
