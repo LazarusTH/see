@@ -34,14 +34,14 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const { data: limitsData, error: limitsError } = await supabase
         .from("user_limits")
         .select("daily_limit, weekly_limit, monthly_limit, limit_created_at")
-        .eq("user_id", user.id)  // Changed profile_id to user_id
+        .eq("user_id", user.id) // Changed profile_id to user_id
         .eq("transaction_type", transactionType)
         .single();
 
       const { data: feesData, error: feesError } = await supabase
         .from("fees")
         .select("fee_type, fee_value")
-        .eq("user_id", user.id)  // Changed profile_id to user_id
+        .eq("user_id", user.id) // Changed profile_id to user_id
         .eq("transaction_type", transactionType)
         .single();
 
@@ -62,7 +62,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const { data, error } = await supabase
         .from("user_banks")
         .select("bank_id, banks(name)")
-        .eq("user_id", user.id);  // Changed profile_id to user_id
+        .eq("user_id", user.id); // Changed profile_id to user_id
 
       if (error) throw error;
 
@@ -182,7 +182,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       if (type === "deposit" && formData.receipt) {
         const { data, error: uploadError } = await supabase.storage
           .from("deposit-reciepts")
-          .upload(`${user.id}/${formData.receipt.name}`, formData.receipt);
+          .upload(formData.receipt.name, formData.receipt); // Upload directly without creating folders
 
         if (uploadError) throw new Error("Error uploading receipt");
 
@@ -248,43 +248,28 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
             type="number"
             value={formData.amount}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+            placeholder="Enter Amount"
             required
           />
 
-          {/* Deposit Form */}
+          {/* Fee and Total Amount */}
           {type === "deposit" && (
             <>
-              <Label>Full Name</Label>
-              <Input
-                type="text"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                required
-              />
-              <Label>Upload Receipt</Label>
-              <Input
-                type="file"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    setFormData({ ...formData, receipt: file });
-                  }
-                }}
-                required
-              />
+              <div>Fee: {fee}</div>
+              <div>Total Amount: {totalAmount}</div>
             </>
           )}
 
-          {/* Withdrawal Form */}
+          {/* Conditional Fields Based on Type */}
           {type === "withdrawal" && (
-            <>
-              <Label>Choose Bank</Label>
+            <div>
+              <Label>Bank</Label>
               <Select
                 value={formData.bankId}
                 onValueChange={(value) => setFormData({ ...formData, bankId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a bank" />
+                  <SelectValue placeholder="Select Bank" />
                 </SelectTrigger>
                 <SelectContent>
                   {userBanks.map((bank) => (
@@ -294,54 +279,45 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
                   ))}
                 </SelectContent>
               </Select>
-              <Label>Account Holder's Name</Label>
-              <Input
-                type="text"
-                value={formData.accountHolderName}
-                onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
-                required
-              />
-              <Label>Account Number</Label>
-              <Input
-                type="text"
-                value={formData.accountNumber}
-                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                required
-              />
-            </>
-          )}
-
-          {/* Send Form */}
-          {type === "send" && (
-            <>
-              <Label>Receiver Email</Label>
-              <Input
-                type="email"
-                value={formData.recipientEmail}
-                onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })}
-                required
-              />
-            </>
-          )}
-
-          {/* Fee Information */}
-          <div className="space-y-2">
-            <Label>Fee</Label>
-            <div className="text-sm text-gray-600">
-              {fees.fee_type === "percentage" ? `${fees.fee_value}%` : `$${fees.fee_value}`}
             </div>
-            <div className="text-sm text-gray-600">Fee Amount: ${fee.toFixed(2)}</div>
-          </div>
+          )}
 
-          {/* Total Amount */}
-          <div className="space-y-2">
-            <Label>Total Amount</Label>
-            <div className="text-sm text-gray-600">${totalAmount.toFixed(2)}</div>
-          </div>
+          {type === "send" && (
+            <Input
+              type="email"
+              placeholder="Recipient's Email"
+              value={formData.recipientEmail}
+              onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })}
+              required
+            />
+          )}
 
-          {/* Submit Button */}
-          <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading ? "Processing..." : "Submit"}
+          <Label>Full Name</Label>
+          <Input
+            type="text"
+            value={formData.fullName}
+            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            required
+          />
+
+          <Label>Account Holder Name</Label>
+          <Input
+            type="text"
+            value={formData.accountHolderName}
+            onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
+            required
+          />
+
+          <Label>Account Number</Label>
+          <Input
+            type="text"
+            value={formData.accountNumber}
+            onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+            required
+          />
+
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Processing..." : "Submit Transaction"}
           </Button>
         </form>
       </DialogContent>
