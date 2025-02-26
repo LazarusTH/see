@@ -17,15 +17,16 @@ interface UserDetailsModalProps {
 }
 
 const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
-  // State for storing the image URL
   const [idCardUrl, setIdCardUrl] = useState<string | null>(null);
 
-  // Fetch ID Card Image URL
   useEffect(() => {
-    if (user.id_card_url) {
-      const { data } = supabase.storage.from("id-cards").getPublicUrl(user.id_card_url);
-      setIdCardUrl(data.publicUrl);
-    }
+    const fetchImageUrl = async () => {
+      if (user.id_card_url) {
+        const { data } = supabase.storage.from("id-cards").getPublicUrl(user.id_card_url);
+        setIdCardUrl(data.publicUrl);
+      }
+    };
+    fetchImageUrl();
   }, [user.id_card_url]);
 
   const { data: userLimits } = useQuery({
@@ -57,9 +58,7 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_banks")
-        .select(
-          "*, banks ( name )"
-        )
+        .select("*, banks ( name )")
         .eq("user_id", user.id);
       if (error) throw error;
       return data;
@@ -74,7 +73,6 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
         </DialogHeader>
         <ScrollArea className="max-h-[80vh]">
           <div className="space-y-6">
-            {/* Personal Information */}
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -96,8 +94,6 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
                 </div>
               </div>
             </Card>
-
-            {/* ID Card (Corrected Display) */}
             {idCardUrl && (
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4">ID Card</h3>
