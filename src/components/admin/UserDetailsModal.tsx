@@ -1,54 +1,37 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "react-query";
 
-interface UserDetailsModalProps {
-  user: any;
-  onClose: () => void;
-}
-
-const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
-  const [idCardUrl, setIdCardUrl] = useState<string | null>(null);
+const UserDetailsModal = ({ user, onClose }) => {
+  const [idCardUrl, setIdCardUrl] = useState(null);
 
   useEffect(() => {
     if (user?.id_card_url) {
-      const { publicUrl } = supabase.storage
-        .from("id-cards")
-        .getPublicUrl(user.id_card_url);
-      setIdCardUrl(publicUrl);
+      const { publicUrl } = supabase.storage.from("id-cards").getPublicUrl(user.id_card_url);
+      setIdCardUrl(publicUrl || null);
     }
   }, [user?.id_card_url]);
 
-  const fetchUserLimits = async () => {
+  const fetchUserData = async (table) => {
     if (!user?.id) return [];
-    const { data, error } = await supabase
-      .from("user_limits")
-      .select("*")
-      .eq("user_id", user.id);
+    const { data, error } = await supabase.from(table).select("*").eq("user_id", user.id);
     if (error) throw error;
     return data;
   };
 
-  const fetchUserFees = async () => {
-    if (!user?.id) return [];
-    const { data, error } = await supabase
-      .from("fees")
-      .select("*")
-      .eq("user_id", user.id);
-    if (error) throw error;
-    return data;
-  };
+  const { data: userLimits } = useQuery(["userLimits", user?.id], () => fetchUserData("user_limits"), {
+    enabled: !!user?.id,
+  });
 
-  const fetchUserBanks = async () => {
+  const { data: userFees } = useQuery(["userFees", user?.id], () => fetchUserData("fees"), {
+    enabled: !!user?.id,
+  });
+
+  const { data: userBanks } = useQuery(["userBanks", user?.id], async () => {
     if (!user?.id) return [];
     const { data, error } = await supabase
       .from("user_banks")
@@ -56,11 +39,9 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
       .eq("user_id", user.id);
     if (error) throw error;
     return data;
-  };
-
-  const { data: userLimits } = useQuery(["userLimits", user?.id], fetchUserLimits);
-  const { data: userFees } = useQuery(["userFees", user?.id], fetchUserFees);
-  const { data: userBanks } = useQuery(["userBanks", user?.id], fetchUserBanks);
+  }, {
+    enabled: !!user?.id,
+  });
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -70,30 +51,22 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
         </DialogHeader>
         <ScrollArea className="max-h-[80vh]">
           <div className="space-y-6">
-            {/* Personal Information */}
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">First Name</h4>
-                  <p className="mt-1">{user?.first_name || "N/A"}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">Last Name</h4>
-                  <p className="mt-1">{user?.last_name || "N/A"}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">Username</h4>
-                  <p className="mt-1">{user?.username || "N/A"}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">Email</h4>
-                  <p className="mt-1">{user?.email || "N/A"}</p>
-                </div>
+                {[
+                  { label: "First Name", value: user?.first_name },
+                  { label: "Last Name", value: user?.last_name },
+                  { label: "Username", value: user?.username },
+                  { label: "Email", value: user?.email },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <h4 className="text-sm font-medium text-muted-foreground">{label}</h4>
+                    <p className="mt-1">{value || "N/A"}</p>
+                  </div>
+                ))}
               </div>
             </Card>
-
-            {/* ID Card Section */}
             {idCardUrl && (
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4">ID Card</h3>
