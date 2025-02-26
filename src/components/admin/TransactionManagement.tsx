@@ -133,20 +133,6 @@ const TransactionManagement = ({ type }: TransactionManagementProps) => {
     }
   };
 
-  const handleViewReceipt = (receiptUrl: string) => {
-    // Check if the URL is from Supabase Storage
-    if (receiptUrl) {
-      const url = supabase.storage
-        .from("deposit-reciepts")
-        .getPublicUrl(receiptUrl).publicURL;
-
-      // Open the image in a new tab
-      window.open(url, "_blank");
-    } else {
-      toast.error("Receipt not found.");
-    }
-  };
-
   return (
     <div className="space-y-6">
       <Card className="p-6">
@@ -183,13 +169,11 @@ const TransactionManagement = ({ type }: TransactionManagementProps) => {
                   </TableCell>
                   <TableCell>
                     <Badge
-                      className={
-                        transaction.status === "approved"
-                          ? "bg-green-100 text-green-800"
-                          : transaction.status === "rejected"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }
+                      className={transaction.status === "approved"
+                        ? "bg-green-100 text-green-800"
+                        : transaction.status === "rejected"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-yellow-100 text-yellow-800"}
                     >
                       {transaction.status}
                     </Badge>
@@ -303,13 +287,14 @@ const TransactionManagement = ({ type }: TransactionManagementProps) => {
                   <h4 className="font-medium text-sm text-muted-foreground mb-2">
                     Receipt
                   </h4>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleViewReceipt(selectedTransaction.receipt_url!)}
-                    className="gap-2"
-                  >
-                    <Eye className="w-4 h-4" /> View Receipt
-                  </Button>
+                  {/* Directly display the receipt */}
+                  <img
+                    src={supabase.storage
+                      .from("deposit-reciepts")
+                      .getPublicUrl(selectedTransaction.receipt_url).publicURL}
+                    alt="Receipt"
+                    className="w-full h-auto"
+                  />
                 </div>
               )}
             </div>
