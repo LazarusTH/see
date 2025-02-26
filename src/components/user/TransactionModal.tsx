@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "sending", deposit: "deposit" };
+const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "send", deposit: "deposit" };
 
 const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
   const [formData, setFormData] = useState({
@@ -34,14 +34,14 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const { data: limitsData, error: limitsError } = await supabase
         .from("user_limits")
         .select("daily_limit, weekly_limit, monthly_limit, limit_created_at")
-        .eq("user_id", user.id) // Changed profile_id to user_id
+        .eq("user_id", user.id)
         .eq("transaction_type", transactionType)
         .single();
 
       const { data: feesData, error: feesError } = await supabase
         .from("fees")
         .select("fee_type, fee_value")
-        .eq("user_id", user.id) // Changed profile_id to user_id
+        .eq("user_id", user.id)
         .eq("transaction_type", transactionType)
         .single();
 
@@ -62,7 +62,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const { data, error } = await supabase
         .from("user_banks")
         .select("bank_id, banks(name)")
-        .eq("user_id", user.id); // Changed profile_id to user_id
+        .eq("user_id", user.id);
 
       if (error) throw error;
 
@@ -86,38 +86,32 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !userLimits) return;
 
-    // Define limit periods in milliseconds
     const limitPeriods = {
       daily: 24 * 60 * 60 * 1000, // 24 hours
       weekly: 7 * 24 * 60 * 60 * 1000, // 7 days
       monthly: 30 * 24 * 60 * 60 * 1000, // 30 days
     };
 
-    // Loop over the periods (daily, weekly, monthly)
     for (const [period, duration] of Object.entries(limitPeriods)) {
       const limit = userLimits[`${period}_limit`];
-      if (!limit) continue; // Skip if no limit is set for this period
+      if (!limit) continue;
 
-      // Calculate the start of the limit period
       const limitStart = new Date(userLimits.limit_created_at);
       const limitEnd = new Date(limitStart.getTime() + duration);
 
-      // Fetch transactions within the limit period
       const { data, error } = await supabase
         .from("transactions")
         .select("amount, created_at")
         .eq("user_id", user.id)
         .eq("type", type)
         .eq("status", "approved")
-        .gte("created_at", limitStart.toISOString()) // From limit start date
-        .lte("created_at", limitEnd.toISOString()); // To limit end date
+        .gte("created_at", limitStart.toISOString())
+        .lte("created_at", limitEnd.toISOString());
 
       if (error) throw error;
 
-      // Sum the transaction amounts
       const totalSpent = data.reduce((sum, tx) => sum + tx.amount, 0);
 
-      // Check if the new transaction would exceed the limit
       if (totalSpent + amount > limit) {
         throw new Error(`Exceeds ${period} limit of ${limit}`);
       }
@@ -182,7 +176,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       if (type === "deposit" && formData.receipt) {
         const { data, error: uploadError } = await supabase.storage
           .from("deposit-reciepts")
-          .upload(formData.receipt.name, formData.receipt); // Upload directly without creating folders
+          .upload(formData.receipt.name, formData.receipt); // Upload directly to the bucket
 
         if (uploadError) throw new Error("Error uploading receipt");
 
@@ -248,28 +242,43 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
             type="number"
             value={formData.amount}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-            placeholder="Enter Amount"
             required
           />
 
-          {/* Fee and Total Amount */}
+          {/* Deposit Form */}
           {type === "deposit" && (
             <>
-              <div>Fee: {fee}</div>
-              <div>Total Amount: {totalAmount}</div>
+              <Label>Full Name</Label>
+              <Input
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                required
+              />
+              <Label>Upload Receipt</Label>
+              <Input
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setFormData({ ...formData, receipt: file });
+                  }
+                }}
+                required
+              />
             </>
           )}
 
-          {/* Conditional Fields Based on Type */}
+          {/* Withdrawal Form */}
           {type === "withdrawal" && (
-            <div>
-              <Label>Bank</Label>
+            <>
+              <Label>Choose Bank</Label>
               <Select
                 value={formData.bankId}
                 onValueChange={(value) => setFormData({ ...formData, bankId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Bank" />
+                  <SelectValue placeholder="Select a bank" />
                 </SelectTrigger>
                 <SelectContent>
                   {userBanks.map((bank) => (
@@ -279,45 +288,54 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+              <Label>Account Holder's Name</Label>
+              <Input
+                type="text"
+                value={formData.accountHolderName}
+                onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
+                required
+              />
+              <Label>Account Number</Label>
+              <Input
+                type="text"
+                value={formData.accountNumber}
+                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                required
+              />
+            </>
           )}
 
+          {/* Send Form */}
           {type === "send" && (
-            <Input
-              type="email"
-              placeholder="Recipient's Email"
-              value={formData.recipientEmail}
-              onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })}
-              required
-            />
+            <>
+              <Label>Receiver Email</Label>
+              <Input
+                type="email"
+                value={formData.recipientEmail}
+                onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })}
+                required
+              />
+            </>
           )}
 
-          <Label>Full Name</Label>
-          <Input
-            type="text"
-            value={formData.fullName}
-            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-            required
-          />
+          {/* Fee Information */}
+          <div className="space-y-2">
+            <Label>Fee</Label>
+            <div className="text-sm text-gray-600">
+              {fees.fee_type === "percentage" ? `${fees.fee_value}%` : `$${fees.fee_value}`}
+            </div>
+            <div className="text-sm text-gray-600">Fee Amount: ${fee.toFixed(2)}</div>
+          </div>
 
-          <Label>Account Holder Name</Label>
-          <Input
-            type="text"
-            value={formData.accountHolderName}
-            onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
-            required
-          />
+          {/* Total Amount */}
+          <div className="space-y-2">
+            <Label>Total Amount</Label>
+            <div className="text-sm text-gray-600">${totalAmount.toFixed(2)}</div>
+          </div>
 
-          <Label>Account Number</Label>
-          <Input
-            type="text"
-            value={formData.accountNumber}
-            onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-            required
-          />
-
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Processing..." : "Submit Transaction"}
+          {/* Submit Button */}
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? "Processing..." : "Submit"}
           </Button>
         </form>
       </DialogContent>
