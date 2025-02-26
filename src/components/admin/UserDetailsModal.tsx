@@ -20,51 +20,47 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
   const [idCardUrl, setIdCardUrl] = useState<string | null>(null);
 
   useEffect(() => {
-  const fetchImageUrl = async () => {
-    if (user.id_card_url) {
-      const { publicUrl } = supabase.storage.from("id-cards").getPublicUrl(user.id_card_url);
+    if (user?.id_card_url) {
+      const { publicUrl } = supabase.storage
+        .from("id-cards")
+        .getPublicUrl(user.id_card_url);
       setIdCardUrl(publicUrl);
     }
+  }, [user?.id_card_url]);
+
+  const fetchUserLimits = async () => {
+    if (!user?.id) return [];
+    const { data, error } = await supabase
+      .from("user_limits")
+      .select("*")
+      .eq("user_id", user.id);
+    if (error) throw error;
+    return data;
   };
-  fetchImageUrl();
-}, [user.id_card_url]);
 
+  const fetchUserFees = async () => {
+    if (!user?.id) return [];
+    const { data, error } = await supabase
+      .from("fees")
+      .select("*")
+      .eq("user_id", user.id);
+    if (error) throw error;
+    return data;
+  };
 
-  const { data: userLimits } = useQuery({
-    queryKey: ["userLimits", user.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_limits")
-        .select("*")
-        .eq("user_id", user.id);
-      if (error) throw error;
-      return data;
-    },
-  });
+  const fetchUserBanks = async () => {
+    if (!user?.id) return [];
+    const { data, error } = await supabase
+      .from("user_banks")
+      .select("*, banks ( name )")
+      .eq("user_id", user.id);
+    if (error) throw error;
+    return data;
+  };
 
-  const { data: userFees } = useQuery({
-    queryKey: ["userFees", user.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("fees")
-        .select("*")
-        .eq("user_id", user.id);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: userBanks } = useQuery({
-    queryKey: ["userBanks", user.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_banks")
-        .select("*, banks ( name )")
-        .eq("user_id", user.id);
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data: userLimits } = useQuery(["userLimits", user?.id], fetchUserLimits);
+  const { data: userFees } = useQuery(["userFees", user?.id], fetchUserFees);
+  const { data: userBanks } = useQuery(["userBanks", user?.id], fetchUserBanks);
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -74,27 +70,30 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
         </DialogHeader>
         <ScrollArea className="max-h-[80vh]">
           <div className="space-y-6">
+            {/* Personal Information */}
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground">First Name</h4>
-                  <p className="mt-1">{user.first_name || "N/A"}</p>
+                  <p className="mt-1">{user?.first_name || "N/A"}</p>
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground">Last Name</h4>
-                  <p className="mt-1">{user.last_name || "N/A"}</p>
+                  <p className="mt-1">{user?.last_name || "N/A"}</p>
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground">Username</h4>
-                  <p className="mt-1">{user.username || "N/A"}</p>
+                  <p className="mt-1">{user?.username || "N/A"}</p>
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground">Email</h4>
-                  <p className="mt-1">{user.email || "N/A"}</p>
+                  <p className="mt-1">{user?.email || "N/A"}</p>
                 </div>
               </div>
             </Card>
+
+            {/* ID Card Section */}
             {idCardUrl && (
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4">ID Card</h3>
