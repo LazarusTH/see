@@ -169,10 +169,10 @@ const TransactionManagement = ({ type }: TransactionManagementProps) => {
                   </TableCell>
                   <TableCell>
                     <Badge
-                      className={transaction.status === "approved"
-                        ? "bg-green-100 text-green-800"
-                        : transaction.status === "rejected"
-                        ? "bg-red-100 text-red-800"
+                      className={transaction.status === "approved" 
+                        ? "bg-green-100 text-green-800" 
+                        : transaction.status === "rejected" 
+                        ? "bg-red-100 text-red-800" 
                         : "bg-yellow-100 text-yellow-800"}
                     >
                       {transaction.status}
@@ -287,14 +287,17 @@ const TransactionManagement = ({ type }: TransactionManagementProps) => {
                   <h4 className="font-medium text-sm text-muted-foreground mb-2">
                     Receipt
                   </h4>
-                  {/* Directly display the receipt */}
-                  <img
-                    src={supabase.storage
-                      .from("deposit-reciepts")
-                      .getPublicUrl(selectedTransaction.receipt_url).publicURL}
-                    alt="Receipt"
-                    className="w-full h-auto"
-                  />
+                  <Card className="p-6">
+                    <div className="w-full">
+                      <img
+                        src={supabase.storage
+                          .from("deposit-reciepts")
+                          .getPublicUrl(selectedTransaction.receipt_url).publicURL}
+                        alt="Receipt"
+                        className="max-w-full h-auto rounded-lg"
+                      />
+                    </div>
+                  </Card>
                 </div>
               )}
             </div>
