@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,6 +17,17 @@ interface UserDetailsModalProps {
 }
 
 const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
+  // State for storing the image URL
+  const [idCardUrl, setIdCardUrl] = useState<string | null>(null);
+
+  // Fetch ID Card Image URL
+  useEffect(() => {
+    if (user.id_card_url) {
+      const { data } = supabase.storage.from("id-cards").getPublicUrl(user.id_card_url);
+      setIdCardUrl(data.publicUrl);
+    }
+  }, [user.id_card_url]);
+
   const { data: userLimits } = useQuery({
     queryKey: ["userLimits", user.id],
     queryFn: async () => {
@@ -41,27 +52,14 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
     },
   });
 
-const { publicURL, error } = supabase
-  .storage
-  .from('id-cards')
-  .getPublicUrl(user.id_card_url);
-
-if (error) {
-  console.error("Error fetching image:", error.message);
-}
-
-
   const { data: userBanks } = useQuery({
     queryKey: ["userBanks", user.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_banks")
-        .select(`
-          *,
-          banks (
-            name
-          )
-        `)
+        .select(
+          "*, banks ( name )"
+        )
         .eq("user_id", user.id);
       if (error) throw error;
       return data;
@@ -96,130 +94,23 @@ if (error) {
                   <h4 className="text-sm font-medium text-muted-foreground">Email</h4>
                   <p className="mt-1">{user.email || "N/A"}</p>
                 </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">Date of Birth</h4>
-                  <p className="mt-1">{user.date_of_birth || "N/A"}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">Place of Birth</h4>
-                  <p className="mt-1">{user.place_of_birth || "N/A"}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">Residence</h4>
-                  <p className="mt-1">{user.residence || "N/A"}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">Nationality</h4>
-                  <p className="mt-1">{user.nationality || "N/A"}</p>
-                </div>
               </div>
             </Card>
 
-           {/* ID Card (Direct Display) */}
-{user.id_card_url && (
-  <Card className="p-6">
-    <h3 className="text-lg font-semibold mb-4">ID Card</h3>
-    <div className="flex justify-center">
-     <img
-  src={publicURL}
-  alt="ID Card"
-  className="max-w-full w-auto h-auto rounded-lg shadow-md"
-  style={{ maxHeight: '500px' }}
-/>
-
-    </div>
-  </Card>
-)}
-
-
-            {/* Transaction Limits */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Transaction Limits</h3>
-              <div className="space-y-4">
-                {userLimits?.map((limit) => (
-                  <div key={limit.id} className="border-b pb-4">
-                    <h4 className="font-medium capitalize">{limit.transaction_type} Limits</h4>
-                    <div className="grid grid-cols-3 gap-4 mt-2">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Daily</p>
-                        <p className="font-medium">${limit.daily_limit || "No limit"}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Weekly</p>
-                        <p className="font-medium">${limit.weekly_limit || "No limit"}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Monthly</p>
-                        <p className="font-medium">${limit.monthly_limit || "No limit"}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Transaction Fees */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Transaction Fees</h3>
-              <div className="space-y-4">
-                {userFees?.map((fee) => (
-                  <div key={fee.id} className="border-b pb-4">
-                    <h4 className="font-medium capitalize">{fee.transaction_type} Fees</h4>
-                    <div className="mt-2">
-                      <p className="text-sm text-muted-foreground">Type: {fee.fee_type}</p>
-                      <p className="font-medium">
-                        {fee.fee_type === 'percentage' ? `${fee.fee_value}%` : `$${fee.fee_value}`}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Assigned Banks */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Assigned Banks</h3>
-              <div className="space-y-4">
-                {userBanks?.map((bank) => (
-                  <div key={bank.id} className="border-b pb-4">
-                    <h4 className="font-medium">{bank.banks.name}</h4>
-                    <div className="grid grid-cols-2 gap-4 mt-2">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Account Number</p>
-                        <p className="font-medium">{bank.account_number}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Account Name</p>
-                        <p className="font-medium">{bank.account_name}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Account Status */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Account Status</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">Status</h4>
-                  <p className="mt-1 capitalize">{user.status || "N/A"}</p>
+            {/* ID Card (Corrected Display) */}
+            {idCardUrl && (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">ID Card</h3>
+                <div className="flex justify-center">
+                  <img
+                    src={idCardUrl}
+                    alt="ID Card"
+                    className="max-w-full w-auto h-auto rounded-lg shadow-md"
+                    style={{ maxHeight: "500px" }}
+                  />
                 </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">Balance</h4>
-                  <p className="mt-1">${user.balance?.toFixed(2) || "0.00"}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">Created At</h4>
-                  <p className="mt-1">
-                    {user.created_at
-                      ? new Date(user.created_at).toLocaleDateString()
-                      : "N/A"}
-                  </p>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            )}
           </div>
         </ScrollArea>
       </DialogContent>
