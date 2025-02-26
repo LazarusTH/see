@@ -164,6 +164,18 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const fee = calculateFee(amount);
       const totalAmount = amount + fee;
 
+      // Upload receipt if it's a deposit
+      let receiptUrl = null;
+      if (type === "deposit" && formData.receipt) {
+        const { data, error: uploadError } = await supabase.storage
+          .from("deposit-reciepts")
+          .upload(`${user.id}/${formData.receipt.name}`, formData.receipt);
+
+        if (uploadError) throw new Error("Error uploading receipt");
+
+        receiptUrl = data?.path;
+      }
+
       const transactionData = {
         user_id: user.id,
         type,
@@ -172,7 +184,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         total_amount: totalAmount,
         bank_id: formData.bankId || null,
         recipient_email: formData.recipientEmail || null,
-        receipt_url: formData.receipt || null,
+        receipt_url: receiptUrl || null,
         full_name: formData.fullName || null,
         status: "pending",
       };
@@ -213,6 +225,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
           <DialogTitle>{type === "deposit" ? "Make a Deposit" : type === "withdrawal" ? "Withdraw Funds" : "Send Money"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Common Amount Field */}
           <Label>Amount</Label>
           <Input
             type="number"
@@ -221,6 +234,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
             required
           />
 
+          {/* Deposit Form */}
           {type === "deposit" && (
             <>
               <Label>Full Name</Label>
@@ -244,6 +258,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
             </>
           )}
 
+          {/* Withdrawal Form */}
           {type === "withdrawal" && (
             <>
               <Label>Select Bank</Label>
@@ -265,6 +280,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
             </>
           )}
 
+          {/* Fee Information */}
           <div className="space-y-2">
             <Label>Fee</Label>
             <div className="text-sm text-gray-600">
@@ -273,11 +289,13 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
             <div className="text-sm text-gray-600">Fee Amount: ${fee.toFixed(2)}</div>
           </div>
 
+          {/* Total Amount */}
           <div className="space-y-2">
             <Label>Total Amount</Label>
             <div className="text-sm text-gray-600">${totalAmount.toFixed(2)}</div>
           </div>
 
+          {/* Submit Button */}
           <Button type="submit" disabled={isLoading} className="w-full">
             {isLoading ? "Processing..." : "Submit"}
           </Button>
