@@ -20,14 +20,15 @@ const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
   const [idCardUrl, setIdCardUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchImageUrl = async () => {
-      if (user.id_card_url) {
-        const { data } = supabase.storage.from("id-cards").getPublicUrl(user.id_card_url);
-        setIdCardUrl(data.publicUrl);
-      }
-    };
-    fetchImageUrl();
-  }, [user.id_card_url]);
+  const fetchImageUrl = async () => {
+    if (user.id_card_url) {
+      const { publicUrl } = supabase.storage.from("id-cards").getPublicUrl(user.id_card_url);
+      setIdCardUrl(publicUrl);
+    }
+  };
+  fetchImageUrl();
+}, [user.id_card_url]);
+
 
   const { data: userLimits } = useQuery({
     queryKey: ["userLimits", user.id],
