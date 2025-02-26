@@ -92,7 +92,7 @@ const TransactionManagement = ({ type }: TransactionManagementProps) => {
   const handleReject = async (transaction: Transaction) => {
     try {
       let refundAmount = transaction.amount;
-      
+
       // Apply fee and refund balance for "withdrawal" and "send" transactions
       if (transaction.type === "withdrawal" || transaction.type === "send") {
         const fee = 0.02; // Example fee rate (2%), adjust as needed
@@ -133,8 +133,18 @@ const TransactionManagement = ({ type }: TransactionManagementProps) => {
     }
   };
 
-  const handleViewReceipt = (url: string) => {
-    window.open(url, '_blank');
+  const handleViewReceipt = (receiptUrl: string) => {
+    // Check if the URL is from Supabase Storage
+    if (receiptUrl) {
+      const url = supabase.storage
+        .from("deposit-reciepts")
+        .getPublicUrl(receiptUrl).publicURL;
+
+      // Open the image in a new tab
+      window.open(url, "_blank");
+    } else {
+      toast.error("Receipt not found.");
+    }
   };
 
   return (
