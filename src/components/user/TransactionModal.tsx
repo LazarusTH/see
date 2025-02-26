@@ -15,6 +15,8 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     amount: "",
     bankId: "",
     recipientEmail: "",
+    accountHolderName: "",
+    accountNumber: "",
     receipt: null,
     fullName: "",
   });
@@ -164,6 +166,17 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const fee = calculateFee(amount);
       const totalAmount = amount + fee;
 
+      // Check if recipient exists in send form
+      if (type === "send" && formData.recipientEmail) {
+        const { data: recipient } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", formData.recipientEmail)
+          .single();
+
+        if (!recipient) throw new Error("Recipient does not exist");
+      }
+
       // Upload receipt if it's a deposit
       let receiptUrl = null;
       if (type === "deposit" && formData.receipt) {
@@ -186,6 +199,8 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         recipient_email: formData.recipientEmail || null,
         receipt_url: receiptUrl || null,
         full_name: formData.fullName || null,
+        account_holder_name: formData.accountHolderName || null,
+        account_number: formData.accountNumber || null,
         status: "pending",
       };
 
@@ -205,6 +220,8 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         amount: "",
         bankId: "",
         recipientEmail: "",
+        accountHolderName: "",
+        accountNumber: "",
         receipt: null,
         fullName: "",
       });
@@ -261,7 +278,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
           {/* Withdrawal Form */}
           {type === "withdrawal" && (
             <>
-              <Label>Select Bank</Label>
+              <Label>Choose Bank</Label>
               <Select
                 value={formData.bankId}
                 onValueChange={(value) => setFormData({ ...formData, bankId: value })}
@@ -277,6 +294,33 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
                   ))}
                 </SelectContent>
               </Select>
+              <Label>Account Holder's Name</Label>
+              <Input
+                type="text"
+                value={formData.accountHolderName}
+                onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
+                required
+              />
+              <Label>Account Number</Label>
+              <Input
+                type="text"
+                value={formData.accountNumber}
+                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                required
+              />
+            </>
+          )}
+
+          {/* Send Form */}
+          {type === "send" && (
+            <>
+              <Label>Receiver Email</Label>
+              <Input
+                type="email"
+                value={formData.recipientEmail}
+                onChange={(e) => setFormData({ ...formData, recipientEmail: e.target.value })}
+                required
+              />
             </>
           )}
 
