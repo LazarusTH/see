@@ -1,26 +1,61 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"; // Ensure this import is correct for your setup
 import { ShieldCheck, Gift, Headphones, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
+// Background variants for smooth transition
+const backgroundVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 1 } },
+};
+
 const LandingPage = () => {
   return (
-    <div className="bg-[#FAF4ED] min-h-screen flex flex-col items-center">
-      {/* Navbar */}
-      <nav className="navbar flex justify-between items-center w-full max-w-7xl py-6 px-6 lg:px-12">
-        <div className="text-2xl font-bold text-gray-800">rayna ui</div>
-        <div className="hidden md:flex space-x-6 text-gray-700 font-medium">
-          <a href="#" className="hover:text-orange-500 transition">About Us</a>
-          <a href="#" className="hover:text-orange-500 transition">Products</a>
-          <a href="#" className="hover:text-orange-500 transition">Pricing</a>
-          <a href="#" className="hover:text-orange-500 transition">Resources</a>
-          <a href="#" className="hover:text-orange-500 transition">FAQs</a>
-        </div>
-        <div className="flex space-x-4">
-          <button className="text-gray-700 hover:text-orange-500 transition">Log in</button>
-          <Button className="bg-orange-500 text-white px-6 py-2 rounded-full shadow-md hover:bg-orange-600 transition">
-            Start Free Trial
-          </Button>
+    <motion.div
+      variants={backgroundVariants}
+      initial="initial"
+      animate="animate"
+      className="relative bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen flex flex-col items-center overflow-hidden"
+    >
+    
+       {/* Background - Subtle Patterns or Gradients */}
+      <div className="absolute inset-0 w-full h-full bg-[url('/grid.svg')] opacity-10 z-0" />
+
+      <div className="relative z-10 w-full">
+        {/* Navbar */}
+        <nav className="navbar flex justify-between items-center w-full max-w-7xl py-6 px-6 lg:px-12">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-2xl font-bold text-gray-800"
+          >
+            rayna ui
+          </motion.div>
+          <div className="hidden md:flex space-x-6 text-gray-700 font-medium">
+            <motion.a
+              href="#"
+              className="hover:text-orange-500 transition"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              About Us
+            </motion.a>
+             <motion.a
+              href="#"
+              className="hover:text-orange-500 transition"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Products
+            </motion.a>
+            
+          </div>
+          <div className="flex space-x-4">
+            <button className="text-gray-700 hover:text-orange-500 transition">Log in</button>
+            <Button className="bg-orange-500 text-white px-6 py-2 rounded-full shadow-md hover:bg-orange-600 transition">Start Free Trial</Button>
+          </div>
+        
         </div>
       </nav>
 
@@ -31,20 +66,20 @@ const LandingPage = () => {
           animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.5 }}
           className="text-sm bg-orange-200 text-orange-700 px-4 py-1 rounded-full mb-4"
-        >
+          >
           Taking payments to the next level
         </motion.span>
         <motion.h1 
-          initial={{ opacity: 0, y: -20 }} 
+          initial={{ opacity: 0, y: -30 }} 
           animate={{ opacity: 1, y: 0 }} 
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
           className="text-5xl font-bold text-gray-900 leading-tight max-w-3xl"
         >
           Send, Receive, and Transact with Ease.
         </motion.h1>
         <motion.p 
           initial={{ opacity: 0, y: 10 }} 
-          animate={{ opacity: 1, y: 0 }} 
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
           className="text-lg text-gray-600 mt-4 max-w-2xl"
         >
@@ -54,15 +89,18 @@ const LandingPage = () => {
           initial={{ opacity: 0, scale: 0.9 }} 
           animate={{ opacity: 1, scale: 1 }} 
           transition={{ duration: 0.5 }}
-        >
-          <Button className="cta-button mt-6 bg-orange-500 text-white px-6 py-2 rounded-full shadow-md hover:bg-orange-600 transition">
-            Start Free Trial
-          </Button>
+        > <Button className="cta-button mt-6 bg-orange-500 text-white px-6 py-2 rounded-full shadow-md hover:bg-orange-600 transition">
+        Start Free Trial
+      </Button>
         </motion.div>
         <motion.img 
           src="https://source.unsplash.com/featured/?blackman,finance"
           alt="Financial empowerment"
-          className="mt-10 w-full max-w-3xl rounded-lg shadow-lg"
+          className="mt-10 w-full max-w-3xl rounded-lg shadow-lg "
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+
+          
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
@@ -88,7 +126,11 @@ const LandingPage = () => {
             key={index}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.2 }}
+            transition={{ delay: index * 0.2, type: 'spring', stiffness: 100 }}
+            whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+            whileTap={{ scale: 0.95 }}
+
+            
             className="feature-item p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition"
           >
             <Icon className="text-orange-500 w-12 h-12 mx-auto mb-4" />
@@ -104,6 +146,7 @@ const LandingPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="text-3xl font-bold text-gray-900 text-center mb-8"
+          
         >
           About Cashora
         </motion.h2>
@@ -111,14 +154,18 @@ const LandingPage = () => {
           <motion.img
             src="https://source.unsplash.com/featured/?finance,management"
             alt="About Cashora"
-            className="rounded-lg shadow-lg"
+            className="rounded-lg shadow-lg "
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1 }}
+            transition={{ duration: 1, type: "spring", stiffness: 100 }}
+
           />
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
+            whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.5 }}
           >
             <p className="text-gray-700 mb-4">
@@ -138,6 +185,8 @@ const LandingPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="text-3xl font-bold text-gray-900 text-center mb-8"
+          
+
         >
           What Makes Us Apart?
         </motion.h2>
@@ -146,6 +195,9 @@ const LandingPage = () => {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
+            whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+            whileTap={{ scale: 0.95 }}
+
             className="feature-item p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition text-center"
           >
             <ShieldCheck className="text-orange-500 w-12 h-12 mx-auto mb-4" />
@@ -158,6 +210,8 @@ const LandingPage = () => {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
+            whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+            whileTap={{ scale: 0.95 }}
             className="feature-item p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition text-center"
           >
             <Zap className="text-orange-500 w-12 h-12 mx-auto mb-4" />
@@ -170,6 +224,9 @@ const LandingPage = () => {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
+            whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
+            whileTap={{ scale: 0.95 }}
+
             className="feature-item p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition text-center"
           >
             <Headphones className="text-orange-500 w-12 h-12 mx-auto mb-4" />
@@ -188,6 +245,7 @@ const LandingPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="text-3xl font-bold text-gray-900 text-center mb-8"
+          
         >
           Take Control of Your Finances
         </motion.h2>
@@ -195,6 +253,7 @@ const LandingPage = () => {
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
+            whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.5 }}
           >
             <h3 className="text-2xl font-semibold text-gray-800 mb-4">
@@ -210,10 +269,12 @@ const LandingPage = () => {
           <motion.img
             src="https://source.unsplash.com/featured/?financial,planning"
             alt="Financial Management"
-            className="rounded-lg shadow-lg"
+            className="rounded-lg shadow-lg "
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1 }}
+            transition={{ duration: 1, type: "spring", stiffness: 100 }}
           />
         </div>
       </section>
@@ -225,6 +286,7 @@ const LandingPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="text-4xl font-bold text-gray-900 mb-8"
+          
         >
           Ready to Transform Your Finances?
         </motion.h2>
@@ -233,6 +295,7 @@ const LandingPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
           className="text-lg text-gray-700 mb-12"
+          
         >
           Sign up for a free trial and experience the power of Cashora.
         </motion.p>
@@ -240,11 +303,14 @@ const LandingPage = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
+          
         >
           <Button className="cta-button bg-orange-500 text-white px-8 py-3 rounded-full shadow-md hover:bg-orange-600 transition">
             Start Free Trial
           </Button>
         </motion.div>
+        
+
       </section>
 
       {/* Footer Section */}
@@ -252,7 +318,8 @@ const LandingPage = () => {
         Copyright © {new Date().getFullYear()} Cashora. All rights reserved.
       </footer>
     </div>
+    
   );
 };
 
-export default LandingPage;
+export default LandingPage;    
