@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { emailTemplates } from "@/lib/emailService";
+import { sendEmail } from "@/lib/emailService";
 
 const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "send", deposit: "deposit" };
 
@@ -160,15 +162,17 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
       const fee = calculateFee(amount);
       const totalAmount = amount + fee;
 
-      // Check if recipient exists in send form
+      // For send transactions, verify recipient exists
+      let recipientProfile;
       if (type === "send" && formData.recipientEmail) {
-        const { data: recipient } = await supabase
+        const { data: recipient, error: recipientError } = await supabase
           .from("profiles")
-          .select("id")
+          .select("id, first_name, last_name, email")
           .eq("email", formData.recipientEmail)
           .single();
 
-        if (!recipient) throw new Error("Recipient does not exist");
+        if (recipientError || !recipient) throw new Error("Recipient does not exist");
+        recipientProfile = recipient;
       }
 
       // Upload receipt if it's a deposit
@@ -206,6 +210,98 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
         await updateBalance(user.id, amount, "add");
       } else if (type === "withdrawal" || type === "send") {
         await updateBalance(user.id, totalAmount, "deduct");
+      }
+
+      // Example for send transaction emails
+      const sendEmailWithFallback = async (emailData) => {
+        const { success, error } = await sendEmail(emailData);
+        if (!success) {
+          console.error('Failed to send email:', error);
+          toast.error('Transaction successful but notification email failed to send');
+        }
+      };
+
+      // Then replace direct email sends with this wrapper
+      if (type === "send" && recipientProfile) {
+        await sendEmailWithFallback({
+          to: user.email,
+          ...emailTemplates.transactionConfirmation(
+            `${user.user_metadata.first_name} ${user.user_metadata.last_name}`,
+            amount,
+            formData.recipientEmail
+          )
+        });
+
+        // Send notification to recipient
+        await sendEmailWithFallback({
+          to: formData.recipientEmail,
+          ...emailTemplates.moneyReceived(
+            `${recipientProfile.first_name} ${recipientProfile.last_name}`,
+            amount,
+            user.email
+          )
+        });
+      }
+
+      if (type === "withdrawal") {
+        // Send confirmation to user
+        await sendEmailWithFallback({
+          to: user.email,
+          ...emailTemplates.withdrawalRequest(
+            `${user.user_metadata.first_name} ${user.user_metadata.last_name}`,
+            amount,
+            userBanks.find(bank => bank.bank_id === formData.bankId)?.bank_name || 'Selected Bank'
+          )
+        });
+
+        // Send notification to admin
+        const { data: adminUsers, error: adminError } = await supabase
+          .from('user_roles')
+          .select('profiles(email, first_name, last_name)')
+          .eq('role', 'admin');
+
+        if (!adminError && adminUsers) {
+          for (const admin of adminUsers) {
+            await sendEmailWithFallback({
+              to: admin.profiles.email,
+              ...emailTemplates.adminWithdrawalNotification(
+                `${user.user_metadata.first_name} ${user.user_metadata.last_name}`,
+                amount,
+                userBanks.find(bank => bank.bank_id === formData.bankId)?.bank_name || 'Selected Bank'
+              )
+            });
+          }
+        }
+      }
+
+      if (type === "deposit") {
+        // Get receipt URL if uploaded
+        let publicReceiptUrl = null;
+        if (receiptUrl) {
+          const { data: urlData } = supabase.storage
+            .from("deposit-reciepts")
+            .getPublicUrl(receiptUrl);
+          publicReceiptUrl = urlData.publicUrl;
+        }
+
+        // Notify admins of new deposit
+        const { data: adminUsers, error: adminError } = await supabase
+          .from('user_roles')
+          .select('profiles(email, first_name, last_name)')
+          .eq('role', 'admin');
+
+        if (!adminError && adminUsers) {
+          for (const admin of adminUsers) {
+            await sendEmailWithFallback({
+              to: admin.profiles.email,
+              ...emailTemplates.adminDepositNotification(
+                `${user.user_metadata.first_name} ${user.user_metadata.last_name}`,
+                amount,
+                publicReceiptUrl
+              )
+            });
+          }
+        }
       }
 
       toast.success("Transaction submitted successfully");

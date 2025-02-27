@@ -21,6 +21,8 @@ import {
 import { Card } from "@/components/ui/card";
 import { Eye, Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { emailTemplates } from "@/lib/emailService";
+import { sendEmail, sendEmailWithFallback } from "@/lib/emailService";
 
 interface Transaction {
   id: string;
@@ -81,6 +83,22 @@ const TransactionManagement = ({ type }: TransactionManagementProps) => {
         .eq("id", transaction.id);
 
       if (error) throw error;
+
+      // Send approval notification
+      await sendEmailWithFallback({
+        to: transaction.profiles.email,
+        ...(transaction.type === "deposit" 
+          ? emailTemplates.depositConfirmation(
+              `${transaction.profiles.first_name} ${transaction.profiles.last_name}`,
+              transaction.amount
+            )
+          : emailTemplates.withdrawalApproved(
+              `${transaction.profiles.first_name} ${transaction.profiles.last_name}`,
+              transaction.amount,
+              transaction.banks?.name
+            )
+        )
+      });
 
       toast.success("Transaction approved successfully");
       refetch();

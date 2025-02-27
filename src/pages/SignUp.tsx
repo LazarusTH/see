@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { sendEmail, emailTemplates } from '@/lib/emailService';
 
 interface FormData {
   firstName: string;
@@ -114,7 +115,13 @@ const SignUp = () => {
 
       if (roleError) throw roleError;
 
-      toast.success("Account created successfully! Please wait for admin approval.");
+      // Send welcome email
+      await sendEmail({
+        to: formData.email,
+        ...emailTemplates.welcomeEmail(formData.firstName)
+      });
+
+      toast.success("Account created successfully! Please check your email to verify your account.");
       navigate("/signin");
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
