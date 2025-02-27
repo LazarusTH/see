@@ -6,19 +6,28 @@
   :root {
     --background: 30 30% 96%;
     --foreground: 222.2 47.4% 11.2%;
-
     --primary: 20 90% 50%;
     --primary-foreground: 0 0% 100%;
-
     --muted: 30 30% 88%;
     --muted-foreground: 222.2 47.4% 25%;
-
     --border: 30 30% 80%;
     --radius: 0.5rem;
   }
 
   body {
-    @apply bg-[#FAF4ED] text-foreground;
+    @apply bg-[#FAF4ED] text-foreground font-sans;
+  }
+
+  h1, h2, h3 {
+    @apply font-semibold text-gray-900;
+  }
+
+  p {
+    @apply text-gray-600;
+  }
+
+  a {
+    @apply text-gray-700 font-medium transition-colors hover:text-primary;
   }
 }
 
@@ -31,27 +40,27 @@
 }
 
 .hero {
-  @apply flex flex-col items-center text-center py-24 px-6;
+  @apply flex flex-col items-center text-center py-24 px-6 sm:px-8 lg:px-12 bg-gradient-to-r from-orange-200 via-yellow-300 to-white;
 }
 
 .hero h1 {
-  @apply text-5xl font-bold text-gray-900 leading-tight max-w-3xl;
+  @apply text-5xl font-bold text-gray-900 leading-tight max-w-3xl mb-6;
 }
 
 .hero p {
-  @apply text-lg text-gray-600 mt-4 max-w-2xl;
+  @apply text-lg text-gray-600 mt-4 max-w-2xl mb-6;
 }
 
 .cta-button {
-  @apply bg-primary text-primary-foreground px-6 py-3 rounded-full text-lg font-semibold shadow-md mt-6 transition-all hover:bg-orange-500 hover:shadow-lg;
+  @apply bg-primary text-primary-foreground px-6 py-3 rounded-full text-lg font-semibold shadow-md mt-6 transition-all duration-300 ease-in-out hover:bg-orange-500 hover:shadow-lg hover:scale-105;
 }
 
 .features {
-  @apply grid grid-cols-2 md:grid-cols-4 gap-8 mt-16;
+  @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 mt-16 mx-6 lg:mx-12;
 }
 
 .feature-item {
-  @apply flex flex-col items-center text-center;
+  @apply flex flex-col items-center text-center p-6 bg-white rounded-lg shadow-lg transition-transform transform hover:scale-105 hover:shadow-xl;
 }
 
 .feature-item svg {
@@ -59,7 +68,11 @@
 }
 
 .footer {
-  @apply bg-gray-100 py-12 text-center text-gray-600;
+  @apply bg-gray-100 py-12 text-center text-gray-600 mt-16;
+}
+
+.footer p {
+  @apply text-sm;
 }
 
 /* Animations */
@@ -76,4 +89,58 @@
 
 .fade-in {
   animation: fadeInUp 0.8s ease-out;
+}
+
+.fade-in-delay-100 {
+  animation: fadeInUp 0.8s ease-out 0.1s;
+}
+
+.fade-in-delay-200 {
+  animation: fadeInUp 0.8s ease-out 0.2s;
+}
+
+/* Button hover transition */
+.cta-button {
+  @apply fade-in;
+}
+
+/* Hero Background Animation */
+.hero {
+  background-position: center;
+  animation: gradientMove 15s ease-in-out infinite;
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: center;
+  }
+  50% {
+    background-position: right center;
+  }
+  100% {
+    background-position: center;
+  }
+}
+
+/* Responsive Design for smaller screens */
+@media (max-width: 768px) {
+  .navbar {
+    @apply flex-col items-start py-4 px-4;
+  }
+
+  .hero h1 {
+    @apply text-4xl;
+  }
+
+  .hero p {
+    @apply text-base;
+  }
+
+  .features {
+    @apply grid-cols-1;
+  }
+
+  .cta-button {
+    @apply w-full;
+  }
 }
