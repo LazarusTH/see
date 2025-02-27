@@ -16,9 +16,9 @@ const LandingPage = () => {
       initial="initial"
       animate="animate"
       className="relative bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen flex flex-col items-center overflow-hidden"
-    >
-    
-       {/* Background - Subtle Patterns or Gradients */}
+    >      
+    {/* Background - Subtle Patterns or Gradients */}
+      
       <div className="absolute inset-0 w-full h-full bg-[url('/grid.svg')] opacity-10 z-0" />
 
       <div className="relative z-10 w-full">
@@ -55,9 +55,9 @@ const LandingPage = () => {
             <button className="text-gray-700 hover:text-orange-500 transition">Log in</button>
             <Button className="bg-orange-500 text-white px-6 py-2 rounded-full shadow-md hover:bg-orange-600 transition">Start Free Trial</Button>
           </div>
-        
-        </div>
-      </nav>
+        </nav>
+
+      </div>
 
       {/* Hero Section */}
       <header className="hero flex flex-col items-center text-center py-24 px-6">
@@ -317,9 +317,10 @@ const LandingPage = () => {
       <footer className="footer py-6 px-6 text-center text-gray-600">
         Copyright © {new Date().getFullYear()} Cashora. All rights reserved.
       </footer>
-    </div>
+    </motion.div>
     
   );
 };
 
-export default LandingPage;    
+export default LandingPage;
+      </footer>
