@@ -12,7 +12,14 @@ import { sendEmail } from "@/lib/emailService";
 
 const TRANSACTION_TYPES = { withdrawal: "withdrawal", send: "send", deposit: "deposit" };
 
-const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
+interface TransactionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  type: string;
+  currentBalance: number;
+}
+
+const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, type, currentBalance }) => {
   const [formData, setFormData] = useState({
     amount: "",
     bankId: "",
@@ -76,7 +83,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     enabled: isOpen && type === "withdrawal",
   });
 
-  const calculateFee = (amount) => {
+  const calculateFee = (amount: number) => {
     if (fees.fee_type === "percentage") {
       return (amount * fees.fee_value) / 100;
     } else {
@@ -84,7 +91,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     }
   };
 
-  const checkLimits = async (amount) => {
+  const checkLimits = async (amount: number) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !userLimits) return;
 
@@ -120,7 +127,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     }
   };
 
-  const updateBalance = async (userId, amount, action) => {
+  const updateBalance = async (userId: string, amount: number, action: 'deduct' | 'add') => {
     const { data, error } = await supabase
       .from("profiles")
       .select("balance")
@@ -144,7 +151,7 @@ const TransactionModal = ({ isOpen, onClose, type, currentBalance }) => {
     if (updateError) throw new Error("Unable to update user balance");
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {

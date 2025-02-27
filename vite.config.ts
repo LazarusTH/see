@@ -19,4 +19,22 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-select',
+            '@radix-ui/react-label',
+            // ... other UI dependencies
+          ],
+          'chart-vendor': ['recharts'],
+          'utils': ['date-fns', '@tanstack/react-query']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000, // Increase warning limit to 1000kb if you prefer
+  },
 }));
