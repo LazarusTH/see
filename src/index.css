@@ -4,137 +4,98 @@
 
 @layer base {
   :root {
-    --background: 30 30% 96%;
-    --foreground: 222.2 47.4% 11.2%;
-    --primary: 20 90% 50%;
-    --primary-foreground: 0 0% 100%;
-    --muted: 30 30% 88%;
-    --muted-foreground: 222.2 47.4% 25%;
-    --border: 30 30% 80%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
     --radius: 0.5rem;
   }
+}
 
+@layer base {
+  * {
+    @apply border-border;
+  }
   body {
-    @apply bg-[#FAF4ED] text-foreground font-sans;
-  }
-
-  h1, h2, h3 {
-    @apply font-semibold text-gray-900;
-  }
-
-  p {
-    @apply text-gray-600;
-  }
-
-  a {
-    @apply text-gray-700 font-medium transition-colors hover:text-primary;
+    @apply bg-[#0A0F1C] text-foreground;
   }
 }
 
-.navbar {
-  @apply flex items-center justify-between w-full max-w-7xl mx-auto py-6 px-6 lg:px-12;
-  background-color: rgba(255, 255, 255, 0.9); /* Slight transparency for the navbar */
-  backdrop-filter: blur(10px); /* Adds a smooth blur effect */
+.status-badge {
+  @apply px-2 py-1 rounded-full text-xs font-medium;
 }
 
-.navbar a {
-  @apply text-gray-700 font-medium transition-colors hover:text-primary;
+.status-badge.approved {
+  @apply bg-green-500/20 text-green-500;
 }
 
-.hero {
-  @apply flex flex-col items-center text-center py-24 px-6 bg-gradient-to-r from-orange-200 via-yellow-300 to-white;
-  background-position: center;
-  animation: gradientMove 15s ease-in-out infinite;
+.status-badge.rejected {
+  @apply bg-red-500/20 text-red-500;
 }
 
-.hero h1 {
-  @apply text-5xl font-bold text-gray-900 leading-tight max-w-3xl mb-6;
+.status-badge.pending {
+  @apply bg-yellow-500/20 text-yellow-500;
 }
 
-.hero p {
-  @apply text-lg text-gray-600 mt-4 max-w-2xl mb-6;
+.stat-card {
+  @apply bg-[#0E1527] rounded-lg p-6 border border-[#1E293B];
 }
 
-.cta-button {
-  @apply bg-primary text-primary-foreground px-6 py-3 rounded-full text-lg font-semibold shadow-md mt-6 transition-all duration-300 ease-in-out hover:bg-orange-500 hover:shadow-lg hover:scale-105;
+.transaction-table {
+  @apply w-full border-collapse;
 }
 
-.features {
-  @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 mt-16 mx-6 lg:mx-12;
+.transaction-table th {
+  @apply text-left py-4 px-4 text-gray-400 font-medium text-sm;
 }
 
-.feature-item {
-  @apply flex flex-col items-center text-center p-6 bg-white rounded-lg shadow-lg transition-transform transform hover:scale-105 hover:shadow-xl;
+.transaction-table td {
+  @apply py-4 px-4 border-t border-[#1E293B];
 }
 
-.feature-item svg {
-  @apply text-primary w-12 h-12 mb-4;
+.sidebar {
+  @apply bg-[#0E1527] border-r border-[#1E293B] w-64 p-6 relative;
 }
 
-.footer {
-  @apply bg-gray-100 py-12 text-center text-gray-600 mt-16;
+.sidebar-link {
+  @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-400 hover:bg-[#1E293B] hover:text-white transition-colors;
 }
 
-.footer p {
-  @apply text-sm;
+.sidebar-link.active {
+  @apply bg-[#1E293B] text-white;
 }
 
-/* Animations */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.fade-in {
-  animation: fadeInUp 0.8s ease-out;
-}
-
-.fade-in-delay-100 {
-  animation: fadeInUp 0.8s ease-out 0.1s;
-}
-
-.fade-in-delay-200 {
-  animation: fadeInUp 0.8s ease-out 0.2s;
-}
-
-/* Hero Background Animation */
-@keyframes gradientMove {
-  0% {
-    background-position: center;
-  }
-  50% {
-    background-position: right center;
-  }
-  100% {
-    background-position: center;
-  }
-}
-
-/* Responsive Design for smaller screens */
+/* Mobile Responsive Styles */
 @media (max-width: 768px) {
-  .navbar {
-    @apply flex-col items-start py-4 px-4;
+  .sidebar {
+    @apply fixed inset-y-0 left-0 transform -translate-x-full transition-transform duration-200 ease-in-out z-30;
   }
 
-  .hero h1 {
-    @apply text-4xl;
-  }
-
-  .hero p {
-    @apply text-base;
-  }
-
-  .features {
-    @apply grid-cols-1;
-  }
-
-  .cta-button {
-    @apply w-full;
+  .sidebar.open {
+    @apply translate-x-0;
   }
 }
