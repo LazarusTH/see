@@ -97,152 +97,124 @@ const LandingPage = () => {
         ))}
       </section>
 
-      {/* Why Choose Us Section */}
-      <section className="why-choose-us py-16 px-6">
+      {/* About Us Section */}
+      <section className="about-us py-16 px-6">
         <motion.h2
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="text-3xl font-bold text-gray-900 text-center mb-8"
         >
-          Why Choose Us?
+          About Cashora
+        </motion.h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <motion.img
+            src="https://source.unsplash.com/featured/?finance,management"
+            alt="About Cashora"
+            className="rounded-lg shadow-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
+          />
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <p className="text-gray-700 mb-4">
+              Cashora is a financial management and transaction platform that empowers individuals and businesses to take control of their finances. We provide a secure, easy-to-use, and innovative solution for managing your money.
+            </p>
+            <p className="text-gray-700">
+              Our mission is to revolutionize the way people interact with their finances, making it more accessible, transparent, and efficient.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* What Makes Us Apart Section */}
+      <section className="what-makes-us-apart py-16 px-6 bg-gray-100">
+        <motion.h2
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-3xl font-bold text-gray-900 text-center mb-8"
+        >
+          What Makes Us Apart?
         </motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="feature-item p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition text-center"
           >
             <ShieldCheck className="text-orange-500 w-12 h-12 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Secure Transactions</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Secure and Reliable</h3>
             <p className="text-gray-600">
-              We use the latest security measures to protect your financial data.
+              We prioritize the security and reliability of our platform, ensuring your financial data is always protected.
             </p>
           </motion.div>
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="feature-item p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition text-center"
           >
             <Zap className="text-orange-500 w-12 h-12 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Instant Transfers</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Innovative Solutions</h3>
             <p className="text-gray-600">
-              Send and receive money instantly with our fast and reliable platform.
+              We are constantly innovating to provide you with the best financial management tools.
             </p>
           </motion.div>
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
             className="feature-item p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition text-center"
           >
             <Headphones className="text-orange-500 w-12 h-12 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">24/7 Support</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Customer-Centric Approach</h3>
             <p className="text-gray-600">
-              Our dedicated support team is available around the clock to assist you.
+              We are committed to providing exceptional customer service and support.
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* Pricing Plans Section */}
-      <section className="pricing-plans py-16 px-6 bg-gray-100">
+      {/* Financial Management Section */}
+      <section className="financial-management py-16 px-6">
         <motion.h2
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="text-3xl font-bold text-gray-900 text-center mb-8"
         >
-          Pricing Plans
+          Take Control of Your Finances
         </motion.h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="pricing-plan p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition text-center"
-          >
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Basic</h3>
-            <p className="text-gray-600 mb-4">Free</p>
-            <ul className="text-gray-700">
-              <li>Limited Transactions</li>
-              <li>Basic Support</li>
-            </ul>
-            <Button className="mt-4 bg-orange-500 text-white px-6 py-2 rounded-full shadow-md hover:bg-orange-600 transition">
-              Get Started
-            </Button>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="pricing-plan p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition text-center"
-          >
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Standard</h3>
-            <p className="text-gray-600 mb-4">$9.99/month</p>
-            <ul className="text-gray-700">
-              <li>Unlimited Transactions</li>
-              <li>Priority Support</li>
-            </ul>
-            <Button className="mt-4 bg-orange-500 text-white px-6 py-2 rounded-full shadow-md hover:bg-orange-600 transition">
-              Get Started
-            </Button>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="pricing-plan p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition text-center"
-          >
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Premium</h3>
-            <p className="text-gray-600 mb-4">$19.99/month</p>
-            <ul className="text-gray-700">
-              <li>Unlimited Transactions</li>
-              <li>24/7 Support</li>
-              <li>Dedicated Account Manager</li>
-            </ul>
-            <Button className="mt-4 bg-orange-500 text-white px-6 py-2 rounded-full shadow-md hover:bg-orange-600 transition">
-              Get Started
-            </Button>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="testimonials py-16 px-6">
-        <motion.h2
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-3xl font-bold text-gray-900 text-center mb-8"
-        >
-          Testimonials
-        </motion.h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="testimonial p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition"
           >
+            <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+              Manage Your Money with Ease
+            </h3>
             <p className="text-gray-700 mb-4">
-              "This platform has revolutionized the way I manage my finances. It's secure, easy to use, and the support team is always there to help."
+              Our platform provides you with the tools you need to manage your finances effectively. Track your spending, create budgets, and set financial goals.
             </p>
-            <p className="text-gray-800 font-semibold">- John Doe</p>
+            <Button className="bg-orange-500 text-white px-6 py-2 rounded-full shadow-md hover:bg-orange-600 transition">
+              Learn More
+            </Button>
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="testimonial p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition"
-          >
-            <p className="text-gray-700 mb-4">
-              "I've tried other platforms, but this one is by far the best. The instant transfers and fraud protection give me peace of mind."
-            </p>
-            <p className="text-gray-800 font-semibold">- Jane Smith</p>
-          </motion.div>
+          <motion.img
+            src="https://source.unsplash.com/featured/?financial,planning"
+            alt="Financial Management"
+            className="rounded-lg shadow-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
+          />
         </div>
       </section>
 
@@ -254,7 +226,7 @@ const LandingPage = () => {
           transition={{ duration: 0.8 }}
           className="text-4xl font-bold text-gray-900 mb-8"
         >
-          Ready to Get Started?
+          Ready to Transform Your Finances?
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 10 }}
@@ -262,7 +234,7 @@ const LandingPage = () => {
           transition={{ duration: 1 }}
           className="text-lg text-gray-700 mb-12"
         >
-          Sign up for a free trial and experience the future of finance.
+          Sign up for a free trial and experience the power of Cashora.
         </motion.p>
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -274,6 +246,11 @@ const LandingPage = () => {
           </Button>
         </motion.div>
       </section>
+
+      {/* Footer Section */}
+      <footer className="footer py-6 px-6 text-center text-gray-600">
+        Copyright © {new Date().getFullYear()} Cashora. All rights reserved.
+      </footer>
     </div>
   );
 };
