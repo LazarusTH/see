@@ -206,7 +206,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, ty
         full_name: formData.fullName || null,
         account_holder_name: formData.accountHolderName || null,
         account_number: formData.accountNumber || null,
-        status: "pending",
+        status: "pending"
       };
 
       const { error } = await supabase.from("transactions").insert(transactionData);

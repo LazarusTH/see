@@ -60,6 +60,25 @@ export const emailTemplates = {
       ${receiptUrl ? `<p>Receipt: <a href="${receiptUrl}">View Receipt</a></p>` : ''}
       <p>Please review and process this request.</p>
     `
+  }),
+
+  depositConfirmation: (userName: string, amount: number) => ({
+    subject: "Deposit Approved",
+    html: `
+      <h1>Deposit Approved</h1>
+      <p>Dear ${userName},</p>
+      <p>Your deposit of $${amount.toFixed(2)} has been approved and added to your account.</p>
+    `
+  }),
+
+  withdrawalApproved: (userName: string, amount: number, bankName: string) => ({
+    subject: "Withdrawal Approved",
+    html: `
+      <h1>Withdrawal Approved</h1>
+      <p>Dear ${userName},</p>
+      <p>Your withdrawal request for $${amount.toFixed(2)} to ${bankName} has been approved.</p>
+      <p>The funds will be transferred to your account shortly.</p>
+    `
   })
 };
 
