@@ -1,49 +1,44 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, Wallet, Clock } from "lucide-react";
-import { motion } from "framer-motion";
+import React from "react";
+import { Link } from "react-router-dom"; // If using React Router
 
-const Index = () => {
+const Index: React.FC = () => {
   return (
-    <div className="min-h-screen">
+    <div className="landing-container">
       {/* Hero Section */}
-      <motion.div 
-        className="hero-section"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1 }}
-      >
-        <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="text-2xl font-bold text-primary">Cashora</div>
-          <div className="space-x-4">
-            <Link to="/signin">
-              <Button variant="ghost">Sign In</Button>
-            </Link>
-            <Link to="/signup">
-              <Button>Get Started</Button>
-            </Link>
-          </div>
-        </nav>
-        
-        <div className="container mx-auto px-6 py-20 text-center">
-          <h1 className="hero-title">
-            Empowering Your Finances with Cashora
-          </h1>
-          <p className="hero-subtitle">
-            Secure, Fast, and Seamless Transactions
-          </p>
-          <Link to="/signup">
-            <Button size="lg" className="gap-2">
-              Get Started <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
+      <header className="hero">
+        <h1>Welcome to Cashora</h1>
+        <p>Your gateway to seamless financial solutions</p>
+        <div className="cta-buttons">
+          <Link to="/signup" className="btn primary">Sign Up</Link>
+          <Link to="/signin" className="btn secondary">Sign In</Link>
         </div>
-      </motion.div>
+      </header>
 
       {/* Features Section */}
-      <div className="py-20 bg-background">
-        <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Why Choose Cashora?
-          </h2>
-     
+      <section className="features">
+        <h2>Why Choose Cashora?</h2>
+        <div className="feature-list">
+          <div className="feature-item">
+            <h3>Fast & Secure</h3>
+            <p>Experience lightning-fast transactions with top-tier security.</p>
+          </div>
+          <div className="feature-item">
+            <h3>User-Friendly</h3>
+            <p>Our platform is designed for ease of use and convenience.</p>
+          </div>
+          <div className="feature-item">
+            <h3>24/7 Support</h3>
+            <p>We are here to assist you anytime, anywhere.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer Section */}
+      <footer className="footer">
+        <p>© {new Date().getFullYear()} Cashora. All rights reserved.</p>
+      </footer>
+    </div>
+  );
+};
+
+export default Index;
