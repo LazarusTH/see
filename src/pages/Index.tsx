@@ -59,6 +59,14 @@ const LandingPage = () => {
             Start Free Trial
           </Button>
         </motion.div>
+        <motion.img 
+          src="https://source.unsplash.com/featured/?blackman,finance"
+          alt="Financial empowerment"
+          className="mt-10 w-full max-w-3xl rounded-lg shadow-lg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+        />
       </header>
 
       {/* Features Section */}
