@@ -7,7 +7,7 @@ const App = () => {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '20px 40px',
+    padding: '30px 50px',
     backgroundColor: '#fff',
     position: 'fixed',
     top: 0,
@@ -17,32 +17,33 @@ const App = () => {
   };
 
   const navbarLogoStyle = {
-    fontSize: '2rem',
+    fontSize: '2.5rem',
     fontWeight: 'bold',
-    color: 'yellow',
+    color: '#FFEB3B', // Yellow color
   };
 
   const navbarLinksStyle = {
     display: 'flex',
-    gap: '20px',
+    gap: '30px',
     listStyle: 'none',
   };
 
   const navbarLinkStyle = {
-    fontSize: '1rem',
+    fontSize: '1.1rem',
     color: '#333',
     cursor: 'pointer',
     fontWeight: '500',
   };
 
   const buttonStyle = {
-    backgroundColor: 'yellow',
+    backgroundColor: '#FFEB3B', // Yellow color
     border: 'none',
-    padding: '10px 20px',
+    padding: '12px 24px',
     color: 'black',
     cursor: 'pointer',
     borderRadius: '5px',
     fontWeight: 'bold',
+    fontSize: '1.1rem',
   };
 
   // Inline styles for Hero Section
@@ -51,7 +52,7 @@ const App = () => {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '120px 40px 80px',
+    padding: '150px 50px 100px',
     backgroundColor: '#111',
     color: '#fff',
     marginTop: '80px',
@@ -62,35 +63,40 @@ const App = () => {
   };
 
   const heroTitleStyle = {
-    fontSize: '3rem',
-    fontWeight: 'bold',
-    color: 'yellow',
+    fontSize: '4rem',
+    fontWeight: '700',
+    color: '#FFEB3B',
+    lineHeight: '1.2',
     marginBottom: '20px',
   };
 
   const heroSubtitleStyle = {
-    fontSize: '1.2rem',
+    fontSize: '1.3rem',
     color: '#fff',
+    fontWeight: '400',
     marginBottom: '30px',
+    lineHeight: '1.6',
   };
 
   const heroStatsStyle = {
-    fontSize: '1.2rem',
+    fontSize: '1.3rem',
     color: '#fff',
-    marginBottom: '20px',
+    marginBottom: '30px',
+    fontWeight: '400',
   };
 
   const buttonsContainerStyle = {
     display: 'flex',
-    gap: '15px',
+    gap: '20px',
+    marginTop: '20px',
   };
 
   const heroImageStyle = {
     width: '45%',
-    backgroundImage: 'url(https://via.placeholder.com/300)', // Replace with actual image URL
+    backgroundImage: 'url(https://via.placeholder.com/350x550)', // Replace with actual image URL
     backgroundSize: 'cover',
     backgroundPosition: 'center',
-    height: '400px',
+    height: '500px',
     borderRadius: '15px',
   };
 
@@ -109,7 +115,7 @@ const App = () => {
         </ul>
         <div>
           <button style={buttonStyle}>Sign In</button>
-          <button style={{ ...buttonStyle, marginLeft: '10px' }}>Sign Up</button>
+          <button style={{ ...buttonStyle, marginLeft: '15px' }}>Sign Up</button>
         </div>
       </div>
 
