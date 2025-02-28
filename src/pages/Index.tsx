@@ -1,248 +1,176 @@
-import React from "react";
-import { Button } from "@/components/ui/button"; // Ensure this import is correct for your setup
-import { ShieldCheck, Gift, Headphones, Zap } from "lucide-react";
-import { motion } from "framer-motion";
+import React from 'react';
+import { motion } from 'framer-motion';
 
-// Background variants for smooth transition
-const backgroundVariants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1, transition: { duration: 1 } },
-};
+const App = () => {
+  // Inline styles for each section
+  const heroSectionStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '100px 20px',
+    backgroundColor: '#111',
+    color: '#fff',
+    textAlign: 'center',
+  };
 
-const LandingPage = () => {
+  const heroTitleStyle = {
+    fontSize: '3.5rem',
+    color: 'yellow',
+  };
+
+  const heroSubtitleStyle = {
+    fontSize: '1.5rem',
+    color: '#fff',
+    marginBottom: '20px',
+  };
+
+  const heroStatsStyle = {
+    fontSize: '1.2rem',
+    color: '#fff',
+    margin: '10px 0',
+  };
+
+  const ctaBtnStyle = {
+    padding: '15px 25px',
+    backgroundColor: 'yellow',
+    border: 'none',
+    color: 'black',
+    cursor: 'pointer',
+    fontSize: '1.2rem',
+    borderRadius: '5px',
+  };
+
+  const featuresSectionStyle = {
+    padding: '80px 20px',
+    backgroundColor: '#f4f4f4',
+    textAlign: 'center',
+  };
+
+  const featuresTitleStyle = {
+    fontSize: '2.5rem',
+    marginBottom: '40px',
+  };
+
+  const featuresCardsStyle = {
+    display: 'flex',
+    justifyContent: 'space-around',
+    gap: '30px',
+  };
+
+  const cardStyle = {
+    backgroundColor: '#fff',
+    padding: '40px',
+    borderRadius: '8px',
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+    width: '30%',
+    textAlign: 'center',
+  };
+
+  const featureIconStyle = {
+    fontSize: '3rem',
+    color: 'yellow',
+    marginBottom: '20px',
+  };
+
+  const testimonialSectionStyle = {
+    padding: '50px 20px',
+    backgroundColor: '#111',
+    color: '#fff',
+    textAlign: 'center',
+  };
+
+  const testimonialTitleStyle = {
+    fontSize: '2.5rem',
+    marginBottom: '30px',
+  };
+
+  const testimonialCardStyle = {
+    backgroundColor: '#fff',
+    color: '#000',
+    padding: '30px',
+    width: '50%',
+    margin: '0 auto',
+    borderRadius: '8px',
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+  };
+
+  const footerSectionStyle = {
+    backgroundColor: '#111',
+    color: '#fff',
+    padding: '20px',
+    textAlign: 'center',
+  };
+
   return (
-    <motion.div
-      variants={backgroundVariants}
-      initial="initial"
-      animate="animate"
-      className="relative bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen flex flex-col items-center overflow-hidden"
-    >
-      {/* Background - Subtle Patterns or Gradients */}
-      <div className="absolute inset-0 w-full h-full bg-[url('/grid.svg')] opacity-10 z-0" />
-
-      <div className="relative z-10 w-full">
-        {/* Navbar */}
-        <nav className="navbar flex justify-between items-center w-full max-w-7xl py-6 px-6 lg:px-12">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-2xl font-bold text-gray-800"
-          >
-            rayna ui
-          </motion.div>
-          <div className="hidden md:flex space-x-6 text-gray-700 font-medium">
-            <motion.a
-              href="#"
-              className="hover:text-orange-500 transition"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              About Us
-            </motion.a>
-            <motion.a
-              href="#"
-              className="hover:text-orange-500 transition"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Products
-            </motion.a>
-          </div>
-          <div className="flex space-x-4">
-            <button className="text-gray-700 hover:text-orange-500 transition">Log in</button>
-            <Button className="bg-orange-500 text-white px-6 py-2 rounded-full shadow-md hover:bg-orange-600 transition">Start Free Trial</Button>
-          </div>
-        </nav>
-      </div>
-
+    <div className="App">
       {/* Hero Section */}
-      <header className="hero flex flex-col items-center text-center py-24 px-6">
-        <motion.span
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-sm bg-orange-200 text-orange-700 px-4 py-1 rounded-full mb-4"
-        >
-          Taking payments to the next level
-        </motion.span>
-        <motion.h1
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-5xl font-bold text-gray-900 leading-tight max-w-3xl"
-        >
-          Send, Receive, and Transact with Ease.
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-          className="text-lg text-gray-600 mt-4 max-w-2xl"
-        >
-          Launch your business with templates that showcase products, explain pricing, and convert users into customers.
-        </motion.p>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Button className="cta-button mt-6 bg-orange-500 text-white px-6 py-2 rounded-full shadow-md hover:bg-orange-600 transition">
-            Start Free Trial
-          </Button>
-        </motion.div>
-        <motion.img
-          src="https://source.unsplash.com/featured/?blackman,finance"
-          alt="Financial empowerment"
-          className="mt-10 w-full max-w-3xl rounded-lg shadow-lg"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1 }}
-        />
-      </header>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        style={heroSectionStyle}
+      >
+        <h1 style={heroTitleStyle}>Manage Your All Daily Transaction</h1>
+        <p style={heroSubtitleStyle}>Fintech that works for you.</p>
+        <div style={heroStatsStyle}>250k+ Users | 200k+ Transactions</div>
+        <p style={heroStatsStyle}>See Our Amazing Features Below</p>
+        <button style={ctaBtnStyle}>Get Started</button>
+      </motion.div>
 
       {/* Features Section */}
-      <section className="features grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 text-center">
-        {[
-          {
-            icon: Headphones,
-            title: "24/7 Customer Support",
-          },
-          {
-            icon: Gift,
-            title: "Cashback & Rewards",
-          },
-          {
-            icon: ShieldCheck,
-            title: "Fraud Protection",
-          },
-          {
-            icon: Zap,
-            title: "Instant Transfers",
-          },
-        ].map(({ icon: Icon, title }, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.2, type: "spring", stiffness: 100 }}
-            whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
-            whileTap={{ scale: 0.95 }}
-            className="feature-item p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition"
-          >
-            <Icon className="text-orange-500 w-12 h-12 mx-auto mb-4" />
-            <p className="text-gray-700 mt-2 font-semibold">{title}</p>
-          </motion.div>
-        ))}
-      </section>
-
-      {/* About Us Section */}
-      <section className="about-us py-16 px-6">
-        <motion.h2
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-3xl font-bold text-gray-900 text-center mb-8"
-        >
-          About Cashora
-        </motion.h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-          <motion.img
-            src="https://source.unsplash.com/featured/?finance,management"
-            alt="About Cashora"
-            className="rounded-lg shadow-lg"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, type: "spring", stiffness: 100 }}
-          />
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.5 }}
-          >
-            <p className="text-gray-700 mb-4">
-              Cashora is a financial management and transaction platform that empowers individuals and businesses to take control of their finances. We provide a secure, easy-to-use, and innovative solution for managing your money.
-            </p>
-            <p className="text-gray-700">
-              Our mission is to revolutionize the way people interact with their finances, making it more accessible, transparent, and efficient.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* What Makes Us Apart Section */}
-      <section className="what-makes-us-apart py-16 px-6 bg-gray-100">
-        <motion.h2
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-3xl font-bold text-gray-900 text-center mb-8"
-        >
-          What Makes Us Apart?
-        </motion.h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
-            whileTap={{ scale: 0.95 }}
-            className="feature-item p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition text-center"
-          >
-            <ShieldCheck className="text-orange-500 w-12 h-12 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Secure and Reliable</h3>
-            <p className="text-gray-600">
-              We prioritize the security and reliability of our platform, ensuring that your financial data is always protected.
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
-            whileTap={{ scale: 0.95 }}
-            className="feature-item p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition text-center"
-          >
-            <Gift className="text-orange-500 w-12 h-12 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Cashback Rewards</h3>
-            <p className="text-gray-600">
-              Earn rewards and cashback on every transaction you make with Cashora, making every use even more valuable.
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.2)" }}
-            whileTap={{ scale: 0.95 }}
-            className="feature-item p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition text-center"
-          >
-            <Zap className="text-orange-500 w-12 h-12 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Fast Transfers</h3>
-            <p className="text-gray-600">
-              Cashora offers instant transfers, so your money is always where you need it, when you need it.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="footer bg-gray-800 text-white py-12 px-6">
-        <div className="container mx-auto text-center">
-          <p>&copy; 2025 Cashora. All rights reserved.</p>
-          <div className="mt-4 space-x-6">
-            <a href="#" className="text-gray-400 hover:text-white">Privacy</a>
-            <a href="#" className="text-gray-400 hover:text-white">Terms</a>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.5 }}
+        style={featuresSectionStyle}
+      >
+        <h2 style={featuresTitleStyle}>See Our Advantages</h2>
+        <div style={featuresCardsStyle}>
+          <div style={cardStyle}>
+            <div style={featureIconStyle}>💼</div>
+            <h3>Manage Finances</h3>
+            <p>Track your daily transactions with ease.</p>
+          </div>
+          <div style={cardStyle}>
+            <div style={featureIconStyle}>📊</div>
+            <h3>Advanced Analytics</h3>
+            <p>Get insights and make informed decisions.</p>
+          </div>
+          <div style={cardStyle}>
+            <div style={featureIconStyle}>📱</div>
+            <h3>Mobile Access</h3>
+            <p>Access your finances anytime, anywhere.</p>
           </div>
         </div>
-      </footer>
-    </motion.div>
+      </motion.div>
+
+      {/* Testimonial Section */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 2 }}
+        style={testimonialSectionStyle}
+      >
+        <h2 style={testimonialTitleStyle}>What Our Clients Say</h2>
+        <div style={testimonialCardStyle}>
+          <p>"Excellent service and easy to use. My finances have never been better!"</p>
+          <h4>- Client Name</h4>
+          <div>⭐⭐⭐⭐⭐</div>
+        </div>
+      </motion.div>
+
+      {/* Footer Section */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 2 }}
+        style={footerSectionStyle}
+      >
+        <p>&copy; 2025 Your Company. All Rights Reserved.</p>
+      </motion.div>
+    </div>
   );
 };
 
-export default LandingPage;
+export default App;
